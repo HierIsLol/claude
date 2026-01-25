@@ -1,42 +1,36 @@
 import { AbsoluteFill, Sequence } from 'remotion';
-import { IntroScene } from './scenes/IntroScene';
 import { ProblemScene } from './scenes/ProblemScene';
-import { SolutionScene } from './scenes/SolutionScene';
-import { LiveTrackerScene } from './scenes/LiveTrackerScene';
-import { StatsScene } from './scenes/StatsScene';
-import { OutroScene } from './scenes/OutroScene';
+import { SmartApproachScene } from './scenes/SmartApproachScene';
+import { HowItWorksScene } from './scenes/HowItWorksScene';
+import { ResultScene } from './scenes/ResultScene';
+import { CTAScene } from './scenes/CTAScene';
 
 export const PositionStickerPromo: React.FC = () => {
   return (
     <AbsoluteFill style={{ backgroundColor: '#0a0a0a' }}>
-      {/* Intro - Position Sticker branding (0-90 frames = 3 sec) */}
-      <Sequence from={0} durationInFrames={90}>
-        <IntroScene />
-      </Sequence>
-
-      {/* Problem - Fluctuating positions (90-180 frames = 3 sec) */}
-      <Sequence from={90} durationInFrames={90}>
+      {/* Scene 1: Het Probleem (0-7 sec = 0-210 frames) */}
+      <Sequence from={0} durationInFrames={210}>
         <ProblemScene />
       </Sequence>
 
-      {/* Solution - Choose keyword & max bid (180-300 frames = 4 sec) */}
-      <Sequence from={180} durationInFrames={120}>
-        <SolutionScene />
+      {/* Scene 2: De Slimme Aanpak (7-12 sec = 210-360 frames) */}
+      <Sequence from={210} durationInFrames={150}>
+        <SmartApproachScene />
       </Sequence>
 
-      {/* Live Tracker visualization (300-420 frames = 4 sec) */}
-      <Sequence from={300} durationInFrames={120}>
-        <LiveTrackerScene />
+      {/* Scene 3: Hoe Het Werkt (12-25 sec = 360-750 frames) */}
+      <Sequence from={360} durationInFrames={390}>
+        <HowItWorksScene />
       </Sequence>
 
-      {/* Stats & Results (420-510 frames = 3 sec) */}
-      <Sequence from={420} durationInFrames={90}>
-        <StatsScene />
+      {/* Scene 4: Het Resultaat (25-35 sec = 750-1050 frames) */}
+      <Sequence from={750} durationInFrames={300}>
+        <ResultScene />
       </Sequence>
 
-      {/* Outro with CTA (510-600 frames = 3 sec) */}
-      <Sequence from={510} durationInFrames={90}>
-        <OutroScene />
+      {/* Scene 5: CTA (35-40 sec = 1050-1200 frames) */}
+      <Sequence from={1050} durationInFrames={150}>
+        <CTAScene />
       </Sequence>
     </AbsoluteFill>
   );
