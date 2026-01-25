@@ -9,37 +9,25 @@ export const SmartApproachScene: React.FC = () => {
     extrapolateRight: 'clamp',
   });
 
-  // Title animation
-  const titleScale = spring({
+  // Logo animation
+  const logoScale = spring({
     frame,
     fps,
-    config: { damping: 12, stiffness: 100 },
+    config: { damping: 10, stiffness: 100 },
   });
 
-  // Interface card animation
-  const cardY = spring({
-    frame: frame - 20,
-    fps,
-    config: { damping: 15, stiffness: 80 },
-  });
-
-  // Slider animation (position selection)
-  const sliderProgress = interpolate(frame, [50, 90], [0.8, 0.1], {
+  // Main text animation
+  const mainTextOpacity = interpolate(frame, [25, 45], [0, 1], {
     extrapolateRight: 'clamp',
   });
 
-  // Max bid animation
-  const maxBidOpacity = interpolate(frame, [80, 100], [0, 1], {
-    extrapolateRight: 'clamp',
-  });
-
-  // Bottom text animation
-  const bottomTextOpacity = interpolate(frame, [110, 130], [0, 1], {
-    extrapolateRight: 'clamp',
-  });
+  // Feature cards animation
+  const feature1Y = spring({ frame: frame - 50, fps, config: { damping: 12, stiffness: 80 } });
+  const feature2Y = spring({ frame: frame - 65, fps, config: { damping: 12, stiffness: 80 } });
+  const feature3Y = spring({ frame: frame - 80, fps, config: { damping: 12, stiffness: 80 } });
 
   // Glow effect
-  const glowIntensity = interpolate(Math.sin(frame * 0.1), [-1, 1], [20, 40]);
+  const glowIntensity = interpolate(Math.sin(frame * 0.12), [-1, 1], [30, 50]);
 
   return (
     <AbsoluteFill
@@ -52,263 +40,241 @@ export const SmartApproachScene: React.FC = () => {
         opacity: sceneOpacity,
       }}
     >
-      {/* Title */}
-      <h2
-        style={{
-          fontSize: 64,
-          color: 'white',
-          fontFamily: 'system-ui, -apple-system, sans-serif',
-          fontWeight: 800,
-          marginBottom: 50,
-          textAlign: 'center',
-          transform: `scale(${titleScale})`,
-        }}
-      >
-        Niet met{' '}
-        <span
-          style={{
-            color: '#22c55e',
-            textShadow: `0 0 ${glowIntensity}px rgba(34, 197, 94, 0.6)`,
-          }}
-        >
-          Position Sticker
-        </span>
-      </h2>
-
-      {/* Interface mockup */}
+      {/* Background glow */}
       <div
         style={{
-          width: 700,
-          backgroundColor: 'white',
-          borderRadius: 24,
-          padding: 40,
-          boxShadow: `0 20px 60px rgba(0, 0, 0, 0.3), 0 0 ${glowIntensity}px rgba(34, 197, 94, 0.2)`,
-          transform: `translateY(${(1 - cardY) * 50}px)`,
-          opacity: cardY,
+          position: 'absolute',
+          width: 600,
+          height: 600,
+          borderRadius: '50%',
+          background: 'radial-gradient(circle, rgba(34, 197, 94, 0.15) 0%, transparent 60%)',
+          filter: `blur(${glowIntensity}px)`,
+        }}
+      />
+
+      {/* Logo and title */}
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 24,
+          marginBottom: 30,
+          transform: `scale(${logoScale})`,
         }}
       >
-        {/* Header */}
         <div
           style={{
+            width: 80,
+            height: 80,
+            borderRadius: 20,
+            background: 'linear-gradient(135deg, #22c55e 0%, #16a34a 100%)',
             display: 'flex',
+            justifyContent: 'center',
             alignItems: 'center',
-            gap: 16,
-            marginBottom: 32,
+            boxShadow: `0 0 ${glowIntensity}px rgba(34, 197, 94, 0.5)`,
           }}
         >
-          <div
-            style={{
-              width: 48,
-              height: 48,
-              borderRadius: 12,
-              background: 'linear-gradient(135deg, #22c55e 0%, #16a34a 100%)',
-              display: 'flex',
-              justifyContent: 'center',
-              alignItems: 'center',
-            }}
-          >
-            <svg width="28" height="28" viewBox="0 0 24 24" fill="white">
-              <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z" />
-            </svg>
-          </div>
-          <span
-            style={{
-              fontSize: 28,
-              fontWeight: 700,
-              color: '#1f2937',
-              fontFamily: 'system-ui',
-            }}
-          >
-            Position Sticker
-          </span>
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="white">
+            <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z" />
+          </svg>
         </div>
-
-        {/* Position selector */}
-        <div style={{ marginBottom: 32 }}>
-          <div
-            style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              marginBottom: 12,
-            }}
-          >
-            <span
-              style={{
-                fontSize: 16,
-                color: '#6b7280',
-                fontFamily: 'system-ui',
-              }}
-            >
-              Gewenste positie
-            </span>
-            <span
-              style={{
-                fontSize: 24,
-                fontWeight: 800,
-                color: '#22c55e',
-                fontFamily: 'system-ui',
-              }}
-            >
-              #{Math.round(1 + sliderProgress * 9)}
-            </span>
-          </div>
-
-          {/* Slider track */}
-          <div
-            style={{
-              height: 12,
-              backgroundColor: '#e5e7eb',
-              borderRadius: 6,
-              position: 'relative',
-            }}
-          >
-            {/* Filled part */}
-            <div
-              style={{
-                position: 'absolute',
-                left: 0,
-                top: 0,
-                height: '100%',
-                width: `${(1 - sliderProgress) * 100}%`,
-                backgroundColor: '#22c55e',
-                borderRadius: 6,
-              }}
-            />
-            {/* Thumb */}
-            <div
-              style={{
-                position: 'absolute',
-                left: `${(1 - sliderProgress) * 100}%`,
-                top: '50%',
-                transform: 'translate(-50%, -50%)',
-                width: 28,
-                height: 28,
-                backgroundColor: 'white',
-                borderRadius: '50%',
-                boxShadow: '0 2px 8px rgba(0, 0, 0, 0.2)',
-                border: '4px solid #22c55e',
-              }}
-            />
-          </div>
-
-          {/* Position labels */}
-          <div
-            style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              marginTop: 8,
-            }}
-          >
-            <span style={{ fontSize: 12, color: '#9ca3af', fontFamily: 'system-ui' }}>
-              #1
-            </span>
-            <span style={{ fontSize: 12, color: '#9ca3af', fontFamily: 'system-ui' }}>
-              #10
-            </span>
-          </div>
-        </div>
-
-        {/* Max bid input */}
-        <div
+        <h1
           style={{
-            opacity: maxBidOpacity,
+            fontSize: 56,
+            fontWeight: 800,
+            color: 'white',
+            margin: 0,
+            fontFamily: 'system-ui',
           }}
         >
-          <div
-            style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              marginBottom: 12,
-            }}
-          >
-            <span
-              style={{
-                fontSize: 16,
-                color: '#6b7280',
-                fontFamily: 'system-ui',
-              }}
-            >
-              Maximum bod
-            </span>
-          </div>
-
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 16,
-            }}
-          >
-            <div
-              style={{
-                flex: 1,
-                backgroundColor: '#f3f4f6',
-                borderRadius: 12,
-                padding: '16px 24px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-              }}
-            >
-              <span
-                style={{
-                  fontSize: 36,
-                  fontWeight: 700,
-                  color: '#1f2937',
-                  fontFamily: 'system-ui',
-                }}
-              >
-                €1.50
-              </span>
-              <span
-                style={{
-                  fontSize: 14,
-                  color: '#9ca3af',
-                  fontFamily: 'system-ui',
-                }}
-              >
-                max CPC
-              </span>
-            </div>
-          </div>
-
-          <p
-            style={{
-              fontSize: 14,
-              color: '#22c55e',
-              fontFamily: 'system-ui',
-              marginTop: 12,
-              display: 'flex',
-              alignItems: 'center',
-              gap: 8,
-            }}
-          >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="#22c55e">
-              <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" stroke="#22c55e" strokeWidth="2" fill="none" />
-            </svg>
-            Je betaalt nooit meer dan dit bedrag
-          </p>
-        </div>
+          Position<span style={{ color: '#22c55e' }}> Sticker</span>
+        </h1>
       </div>
 
-      {/* Bottom tagline */}
+      {/* Main explanation */}
       <div
         style={{
-          marginTop: 50,
-          opacity: bottomTextOpacity,
+          opacity: mainTextOpacity,
+          textAlign: 'center',
+          marginBottom: 50,
         }}
       >
-        <span
+        <h2
           style={{
-            fontSize: 36,
+            fontSize: 42,
             color: 'white',
             fontFamily: 'system-ui',
             fontWeight: 600,
+            marginBottom: 16,
           }}
         >
-          Domineer zonder overbieden{' '}
-          <span style={{ fontSize: 40 }}>⚡</span>
-        </span>
+          Automatisch de beste positie, voor de laagste prijs
+        </h2>
+        <p
+          style={{
+            fontSize: 24,
+            color: 'rgba(255, 255, 255, 0.7)',
+            fontFamily: 'system-ui',
+            maxWidth: 800,
+          }}
+        >
+          Kies je gewenste positie en maximum bod — wij regelen de rest
+        </p>
+      </div>
+
+      {/* Three feature cards */}
+      <div
+        style={{
+          display: 'flex',
+          gap: 32,
+        }}
+      >
+        {/* Feature 1: Choose position */}
+        <div
+          style={{
+            width: 300,
+            backgroundColor: 'rgba(255, 255, 255, 0.05)',
+            borderRadius: 20,
+            padding: 28,
+            border: '1px solid rgba(34, 197, 94, 0.3)',
+            transform: `translateY(${(1 - Math.max(0, feature1Y)) * 40}px)`,
+            opacity: Math.max(0, feature1Y),
+          }}
+        >
+          <div
+            style={{
+              width: 64,
+              height: 64,
+              borderRadius: 16,
+              backgroundColor: 'rgba(34, 197, 94, 0.2)',
+              display: 'flex',
+              justifyContent: 'center',
+              alignItems: 'center',
+              marginBottom: 20,
+            }}
+          >
+            <span style={{ fontSize: 32 }}>🎯</span>
+          </div>
+          <h3
+            style={{
+              fontSize: 24,
+              color: 'white',
+              fontFamily: 'system-ui',
+              fontWeight: 700,
+              marginBottom: 12,
+            }}
+          >
+            Kies je positie
+          </h3>
+          <p
+            style={{
+              fontSize: 16,
+              color: 'rgba(255, 255, 255, 0.6)',
+              fontFamily: 'system-ui',
+              lineHeight: 1.5,
+            }}
+          >
+            Wil je #1 staan? Of liever #3? Jij bepaalt waar je product verschijnt
+          </p>
+        </div>
+
+        {/* Feature 2: Set max bid */}
+        <div
+          style={{
+            width: 300,
+            backgroundColor: 'rgba(255, 255, 255, 0.05)',
+            borderRadius: 20,
+            padding: 28,
+            border: '1px solid rgba(34, 197, 94, 0.3)',
+            transform: `translateY(${(1 - Math.max(0, feature2Y)) * 40}px)`,
+            opacity: Math.max(0, feature2Y),
+          }}
+        >
+          <div
+            style={{
+              width: 64,
+              height: 64,
+              borderRadius: 16,
+              backgroundColor: 'rgba(34, 197, 94, 0.2)',
+              display: 'flex',
+              justifyContent: 'center',
+              alignItems: 'center',
+              marginBottom: 20,
+            }}
+          >
+            <span style={{ fontSize: 32 }}>💰</span>
+          </div>
+          <h3
+            style={{
+              fontSize: 24,
+              color: 'white',
+              fontFamily: 'system-ui',
+              fontWeight: 700,
+              marginBottom: 12,
+            }}
+          >
+            Stel je maximum in
+          </h3>
+          <p
+            style={{
+              fontSize: 16,
+              color: 'rgba(255, 255, 255, 0.6)',
+              fontFamily: 'system-ui',
+              lineHeight: 1.5,
+            }}
+          >
+            Je betaalt nooit meer dan jij wilt. Wij optimaliseren binnen jouw budget
+          </p>
+        </div>
+
+        {/* Feature 3: We do the rest */}
+        <div
+          style={{
+            width: 300,
+            backgroundColor: 'rgba(255, 255, 255, 0.05)',
+            borderRadius: 20,
+            padding: 28,
+            border: '1px solid rgba(34, 197, 94, 0.3)',
+            transform: `translateY(${(1 - Math.max(0, feature3Y)) * 40}px)`,
+            opacity: Math.max(0, feature3Y),
+          }}
+        >
+          <div
+            style={{
+              width: 64,
+              height: 64,
+              borderRadius: 16,
+              backgroundColor: 'rgba(34, 197, 94, 0.2)',
+              display: 'flex',
+              justifyContent: 'center',
+              alignItems: 'center',
+              marginBottom: 20,
+            }}
+          >
+            <span style={{ fontSize: 32 }}>🤖</span>
+          </div>
+          <h3
+            style={{
+              fontSize: 24,
+              color: 'white',
+              fontFamily: 'system-ui',
+              fontWeight: 700,
+              marginBottom: 12,
+            }}
+          >
+            Wij doen de rest
+          </h3>
+          <p
+            style={{
+              fontSize: 16,
+              color: 'rgba(255, 255, 255, 0.6)',
+              fontFamily: 'system-ui',
+              lineHeight: 1.5,
+            }}
+          >
+            24/7 automatisch bieden. Altijd de laagste prijs voor jouw positie
+          </p>
+        </div>
       </div>
     </AbsoluteFill>
   );

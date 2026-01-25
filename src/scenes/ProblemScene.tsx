@@ -9,44 +9,32 @@ export const ProblemScene: React.FC = () => {
     extrapolateRight: 'clamp',
   });
 
-  // Split screen panels slide in
-  const leftPanelX = spring({
+  // Title animation
+  const titleScale = spring({
     frame,
     fps,
-    config: { damping: 15, stiffness: 80 },
+    config: { damping: 12, stiffness: 100 },
   });
 
-  const rightPanelX = spring({
-    frame: frame - 15,
+  // Problems list animation
+  const problem1Opacity = interpolate(frame, [40, 60], [0, 1], { extrapolateRight: 'clamp' });
+  const problem2Opacity = interpolate(frame, [70, 90], [0, 1], { extrapolateRight: 'clamp' });
+  const problem3Opacity = interpolate(frame, [100, 120], [0, 1], { extrapolateRight: 'clamp' });
+
+  // Frustrated seller animation
+  const sellerY = spring({
+    frame: frame - 20,
     fps,
     config: { damping: 15, stiffness: 80 },
   });
 
-  // Bid amount typing animation
-  const bidAmount = interpolate(frame, [30, 60], [0, 2.50], {
-    extrapolateRight: 'clamp',
-  });
-
-  // Red X animation
-  const showRedX = frame > 120;
-  const redXScale = spring({
-    frame: frame - 120,
-    fps,
-    config: { damping: 8, stiffness: 150 },
-  });
-
-  // Title animation
-  const titleOpacity = interpolate(frame, [90, 110], [0, 1], {
-    extrapolateRight: 'clamp',
-  });
+  // Question mark pulse
+  const questionPulse = 1 + Math.sin(frame * 0.15) * 0.1;
 
   // Bottom text animation
   const bottomTextOpacity = interpolate(frame, [150, 170], [0, 1], {
     extrapolateRight: 'clamp',
   });
-
-  // Shake effect on left panel when X appears
-  const shakeX = showRedX ? Math.sin(frame * 0.8) * 4 : 0;
 
   return (
     <AbsoluteFill
@@ -59,331 +47,240 @@ export const ProblemScene: React.FC = () => {
         opacity: sceneOpacity,
       }}
     >
-      {/* Main question */}
-      <h2
+      {/* Main title */}
+      <h1
         style={{
-          fontSize: 52,
+          fontSize: 64,
           color: 'white',
           fontFamily: 'system-ui, -apple-system, sans-serif',
-          fontWeight: 700,
-          marginBottom: 50,
+          fontWeight: 800,
+          marginBottom: 60,
           textAlign: 'center',
-          opacity: titleOpacity,
+          transform: `scale(${titleScale})`,
         }}
       >
-        Wil jij positie 1? Dan moet je toch{' '}
-        <span style={{ color: '#ef4444' }}>SKY-HIGH</span> bieden?
-      </h2>
+        Sponsored Products op{' '}
+        <span style={{ color: '#0066cc' }}>bol.com</span>?
+      </h1>
 
-      {/* Split screen container */}
+      {/* Main content */}
       <div
         style={{
           display: 'flex',
-          gap: 60,
-          justifyContent: 'center',
-          alignItems: 'stretch',
+          gap: 80,
+          alignItems: 'center',
         }}
       >
-        {/* Left panel - Your manual bid */}
+        {/* Left: Frustrated seller visual */}
         <div
           style={{
-            width: 450,
-            backgroundColor: 'rgba(239, 68, 68, 0.1)',
-            borderRadius: 24,
-            padding: 32,
-            border: '2px solid rgba(239, 68, 68, 0.3)',
-            transform: `translateX(${(1 - leftPanelX) * -100}px) translateX(${shakeX}px)`,
-            opacity: leftPanelX,
-            position: 'relative',
+            transform: `translateY(${(1 - sellerY) * 30}px)`,
+            opacity: sellerY,
           }}
         >
           <div
             style={{
-              fontSize: 18,
-              color: 'rgba(255, 255, 255, 0.6)',
-              fontFamily: 'system-ui',
-              marginBottom: 16,
-              textTransform: 'uppercase',
-              letterSpacing: 2,
-            }}
-          >
-            Jouw bod (handmatig)
-          </div>
-
-          {/* Seller avatar */}
-          <div
-            style={{
+              width: 300,
+              height: 300,
+              borderRadius: '50%',
+              background: 'linear-gradient(135deg, rgba(239, 68, 68, 0.2) 0%, rgba(239, 68, 68, 0.1) 100%)',
+              border: '3px solid rgba(239, 68, 68, 0.3)',
               display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'center',
               alignItems: 'center',
-              gap: 16,
-              marginBottom: 24,
+              position: 'relative',
             }}
           >
-            <div
-              style={{
-                width: 60,
-                height: 60,
-                borderRadius: '50%',
-                backgroundColor: '#ef4444',
-                display: 'flex',
-                justifyContent: 'center',
-                alignItems: 'center',
-              }}
-            >
-              <span style={{ fontSize: 28 }}>😰</span>
-            </div>
-            <span
-              style={{
-                color: 'white',
-                fontSize: 24,
-                fontFamily: 'system-ui',
-                fontWeight: 600,
-              }}
-            >
-              Jij
-            </span>
-          </div>
-
-          {/* Bid input */}
-          <div
-            style={{
-              backgroundColor: 'rgba(0, 0, 0, 0.3)',
-              borderRadius: 16,
-              padding: '24px 32px',
-              textAlign: 'center',
-            }}
-          >
-            <div
-              style={{
-                fontSize: 16,
-                color: 'rgba(255, 255, 255, 0.5)',
-                fontFamily: 'system-ui',
-                marginBottom: 8,
-              }}
-            >
-              Je bod voor positie #1
-            </div>
-            <div
-              style={{
-                fontSize: 72,
-                fontWeight: 800,
-                color: '#ef4444',
-                fontFamily: 'system-ui',
-              }}
-            >
-              €{bidAmount.toFixed(2)}
-            </div>
-          </div>
-
-          {/* Position badge */}
-          <div
-            style={{
-              marginTop: 20,
-              textAlign: 'center',
-            }}
-          >
-            <span
-              style={{
-                backgroundColor: '#fef2f2',
-                color: '#ef4444',
-                padding: '8px 20px',
-                borderRadius: 20,
-                fontSize: 16,
-                fontWeight: 600,
-                fontFamily: 'system-ui',
-              }}
-            >
-              "Moet wel zo hoog om zeker te zijn..."
-            </span>
-          </div>
-
-          {/* Big Red X overlay */}
-          {showRedX && (
+            <span style={{ fontSize: 100 }}>😫</span>
             <div
               style={{
                 position: 'absolute',
-                top: 0,
-                left: 0,
-                right: 0,
-                bottom: 0,
-                display: 'flex',
-                justifyContent: 'center',
-                alignItems: 'center',
-                transform: `scale(${Math.max(0, redXScale)})`,
+                top: 20,
+                right: 20,
+                fontSize: 48,
+                transform: `scale(${questionPulse})`,
               }}
             >
-              <svg width="300" height="300" viewBox="0 0 100 100">
-                <circle cx="50" cy="50" r="45" fill="rgba(239, 68, 68, 0.9)" />
-                <path
-                  d="M30 30 L70 70 M70 30 L30 70"
-                  stroke="white"
-                  strokeWidth="8"
-                  strokeLinecap="round"
-                />
-              </svg>
+              ❓
             </div>
-          )}
+            <div
+              style={{
+                position: 'absolute',
+                bottom: 20,
+                left: 20,
+                fontSize: 36,
+              }}
+            >
+              💸
+            </div>
+          </div>
         </div>
 
-        {/* VS divider */}
+        {/* Right: Problems list */}
         <div
           style={{
             display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
+            flexDirection: 'column',
+            gap: 24,
           }}
         >
-          <div
-            style={{
-              width: 60,
-              height: 60,
-              borderRadius: '50%',
-              backgroundColor: 'rgba(255, 255, 255, 0.1)',
-              display: 'flex',
-              justifyContent: 'center',
-              alignItems: 'center',
-              fontSize: 24,
-              fontWeight: 800,
-              color: 'rgba(255, 255, 255, 0.6)',
-              fontFamily: 'system-ui',
-            }}
-          >
-            VS
-          </div>
-        </div>
-
-        {/* Right panel - Competitor at #1 */}
-        <div
-          style={{
-            width: 450,
-            backgroundColor: 'rgba(34, 197, 94, 0.1)',
-            borderRadius: 24,
-            padding: 32,
-            border: '2px solid rgba(34, 197, 94, 0.3)',
-            transform: `translateX(${(1 - rightPanelX) * 100}px)`,
-            opacity: rightPanelX,
-          }}
-        >
-          <div
-            style={{
-              fontSize: 18,
-              color: 'rgba(255, 255, 255, 0.6)',
-              fontFamily: 'system-ui',
-              marginBottom: 16,
-              textTransform: 'uppercase',
-              letterSpacing: 2,
-            }}
-          >
-            Concurrent op #1
-          </div>
-
-          {/* Competitor avatar */}
+          {/* Problem 1 */}
           <div
             style={{
               display: 'flex',
               alignItems: 'center',
-              gap: 16,
-              marginBottom: 24,
+              gap: 20,
+              opacity: problem1Opacity,
+              transform: `translateX(${(1 - problem1Opacity) * 30}px)`,
             }}
           >
             <div
               style={{
-                width: 60,
-                height: 60,
-                borderRadius: '50%',
-                backgroundColor: '#22c55e',
+                width: 56,
+                height: 56,
+                borderRadius: 16,
+                backgroundColor: 'rgba(239, 68, 68, 0.2)',
                 display: 'flex',
                 justifyContent: 'center',
                 alignItems: 'center',
               }}
             >
-              <span style={{ fontSize: 28 }}>😎</span>
+              <span style={{ fontSize: 28 }}>🎯</span>
             </div>
-            <span
-              style={{
-                color: 'white',
-                fontSize: 24,
-                fontFamily: 'system-ui',
-                fontWeight: 600,
-              }}
-            >
-              Concurrent
-            </span>
+            <div>
+              <div
+                style={{
+                  fontSize: 28,
+                  fontWeight: 700,
+                  color: 'white',
+                  fontFamily: 'system-ui',
+                }}
+              >
+                Te hoog bieden om zeker te zijn?
+              </div>
+              <div
+                style={{
+                  fontSize: 18,
+                  color: 'rgba(255, 255, 255, 0.6)',
+                  fontFamily: 'system-ui',
+                }}
+              >
+                Je betaalt veel meer dan nodig
+              </div>
+            </div>
           </div>
 
-          {/* Competitor bid */}
+          {/* Problem 2 */}
           <div
             style={{
-              backgroundColor: 'rgba(0, 0, 0, 0.3)',
-              borderRadius: 16,
-              padding: '24px 32px',
-              textAlign: 'center',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 20,
+              opacity: problem2Opacity,
+              transform: `translateX(${(1 - problem2Opacity) * 30}px)`,
             }}
           >
             <div
               style={{
-                fontSize: 16,
-                color: 'rgba(255, 255, 255, 0.5)',
-                fontFamily: 'system-ui',
-                marginBottom: 8,
+                width: 56,
+                height: 56,
+                borderRadius: 16,
+                backgroundColor: 'rgba(239, 68, 68, 0.2)',
+                display: 'flex',
+                justifyContent: 'center',
+                alignItems: 'center',
               }}
             >
-              Staat op positie #1 met
+              <span style={{ fontSize: 28 }}>⏰</span>
             </div>
-            <div
-              style={{
-                fontSize: 72,
-                fontWeight: 800,
-                color: '#22c55e',
-                fontFamily: 'system-ui',
-              }}
-            >
-              €0.85
+            <div>
+              <div
+                style={{
+                  fontSize: 28,
+                  fontWeight: 700,
+                  color: 'white',
+                  fontFamily: 'system-ui',
+                }}
+              >
+                Constant handmatig aanpassen?
+              </div>
+              <div
+                style={{
+                  fontSize: 18,
+                  color: 'rgba(255, 255, 255, 0.6)',
+                  fontFamily: 'system-ui',
+                }}
+              >
+                Kost veel te veel tijd
+              </div>
             </div>
           </div>
 
-          {/* Position badge */}
+          {/* Problem 3 */}
           <div
             style={{
-              marginTop: 20,
-              textAlign: 'center',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 20,
+              opacity: problem3Opacity,
+              transform: `translateX(${(1 - problem3Opacity) * 30}px)`,
             }}
           >
-            <span
+            <div
               style={{
-                backgroundColor: '#f0fdf4',
-                color: '#22c55e',
-                padding: '8px 20px',
-                borderRadius: 20,
-                fontSize: 16,
-                fontWeight: 600,
-                fontFamily: 'system-ui',
+                width: 56,
+                height: 56,
+                borderRadius: 16,
+                backgroundColor: 'rgba(239, 68, 68, 0.2)',
+                display: 'flex',
+                justifyContent: 'center',
+                alignItems: 'center',
               }}
             >
-              Positie #1 ✓
-            </span>
+              <span style={{ fontSize: 28 }}>📉</span>
+            </div>
+            <div>
+              <div
+                style={{
+                  fontSize: 28,
+                  fontWeight: 700,
+                  color: 'white',
+                  fontFamily: 'system-ui',
+                }}
+              >
+                Positie kwijt aan concurrenten?
+              </div>
+              <div
+                style={{
+                  fontSize: 18,
+                  color: 'rgba(255, 255, 255, 0.6)',
+                  fontFamily: 'system-ui',
+                }}
+              >
+                Je mist sales terwijl je slaapt
+              </div>
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Bottom text */}
+      {/* Bottom question */}
       <div
         style={{
-          marginTop: 50,
-          textAlign: 'center',
+          marginTop: 60,
           opacity: bottomTextOpacity,
         }}
       >
         <span
           style={{
             fontSize: 36,
-            color: 'white',
+            color: '#ef4444',
             fontFamily: 'system-ui',
-            fontWeight: 600,
+            fontWeight: 700,
           }}
         >
-          €2.50 om zeker positie 1 te zijn?{' '}
-          <span style={{ fontSize: 40 }}>💸</span>
+          Er moet toch een slimmere manier zijn?
         </span>
       </div>
     </AbsoluteFill>

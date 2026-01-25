@@ -9,44 +9,59 @@ export const HowItWorksScene: React.FC = () => {
     extrapolateRight: 'clamp',
   });
 
-  // Timeline phases (390 frames total = 13 seconds)
-  // Phase 1 (0-80): You're at #1 with €0.85
-  // Phase 2 (80-160): Competitor bids €0.90, you drop to #2
-  // Phase 3 (160-240): Position Sticker reacts €0.91, back to #1
-  // Phase 4 (240-310): Competitor gives up
-  // Phase 5 (310-390): Position Sticker tests lower, €0.85 works
+  // Timeline phases (390 frames = 13 seconds)
+  // Phase 1 (0-100): You're at #1
+  // Phase 2 (100-180): Competitor tries to take your spot
+  // Phase 3 (180-280): Position Sticker reacts
+  // Phase 4 (280-390): You stay at #1, competitor gone
 
-  const phase = frame < 80 ? 1 : frame < 160 ? 2 : frame < 240 ? 3 : frame < 310 ? 4 : 5;
+  const phase = frame < 100 ? 1 : frame < 180 ? 2 : frame < 280 ? 3 : 4;
 
-  // Current values based on phase
-  const yourBid = phase === 1 ? 0.85 : phase === 2 ? 0.85 : phase === 3 ? 0.91 : phase === 4 ? 0.91 : 0.85;
+  // Your position
   const yourPosition = phase === 2 ? 2 : 1;
-  const competitorBid = phase === 1 ? 0.80 : phase === 2 ? 0.90 : phase === 3 ? 0.90 : phase === 4 ? null : null;
-  const competitorPosition = phase === 2 ? 1 : phase === 3 ? 2 : phase === 4 ? null : null;
 
-  // Status messages
-  const statusMessages: Record<number, { text: string; emoji: string; color: string }> = {
-    1: { text: 'Jij staat op #1', emoji: '✓', color: '#22c55e' },
-    2: { text: 'Concurrent komt', emoji: '👀', color: '#f97316' },
-    3: { text: 'Direct reageren', emoji: '⚡', color: '#22c55e' },
-    4: { text: 'Concurrent geeft op', emoji: '🏳️', color: '#22c55e' },
-    5: { text: 'Verlagen tot minimum', emoji: '↓', color: '#22c55e' },
+  // Status messages - simpler, concept-focused
+  const statusData: Record<number, { title: string; subtitle: string; emoji: string; color: string }> = {
+    1: {
+      title: 'Jij staat op positie #1',
+      subtitle: 'Position Sticker bewaakt je plek',
+      emoji: '🎯',
+      color: '#22c55e'
+    },
+    2: {
+      title: 'Concurrent probeert je te verdringen',
+      subtitle: 'Position Sticker detecteert dit direct',
+      emoji: '⚠️',
+      color: '#f97316'
+    },
+    3: {
+      title: 'Automatisch bod aangepast',
+      subtitle: 'Net genoeg om weer #1 te staan',
+      emoji: '⚡',
+      color: '#22c55e'
+    },
+    4: {
+      title: 'Jij blijft op #1',
+      subtitle: 'Bod wordt automatisch verlaagd tot minimum',
+      emoji: '✅',
+      color: '#22c55e'
+    },
   };
 
-  const currentStatus = statusMessages[phase];
+  const currentStatus = statusData[phase];
 
-  // Animation for bid changes
-  const bidChangeScale = spring({
-    frame: frame % 80,
+  // Animation for status changes
+  const statusScale = spring({
+    frame: frame % 100,
     fps,
-    config: { damping: 8, stiffness: 150 },
+    config: { damping: 12, stiffness: 100 },
   });
 
-  // Pulse effect for your position when at #1
-  const positionPulse = yourPosition === 1 ? 1 + Math.sin(frame * 0.15) * 0.05 : 1;
+  // Position indicator pulse
+  const positionPulse = yourPosition === 1 ? 1 + Math.sin(frame * 0.12) * 0.03 : 1;
 
-  // Alert flash for phase 2
-  const alertFlash = phase === 2 ? Math.sin(frame * 0.3) * 0.5 + 0.5 : 0;
+  // Alert effect for phase 2
+  const alertOpacity = phase === 2 ? 0.5 + Math.sin(frame * 0.25) * 0.3 : 0;
 
   return (
     <AbsoluteFill
@@ -62,56 +77,46 @@ export const HowItWorksScene: React.FC = () => {
       {/* Title */}
       <h2
         style={{
-          fontSize: 48,
+          fontSize: 52,
           color: 'white',
           fontFamily: 'system-ui, -apple-system, sans-serif',
           fontWeight: 700,
-          marginBottom: 20,
+          marginBottom: 50,
         }}
       >
-        Hoe het werkt
+        Zo werkt het
       </h2>
 
-      {/* Subtitle */}
-      <p
-        style={{
-          fontSize: 20,
-          color: 'rgba(255, 255, 255, 0.6)',
-          fontFamily: 'system-ui',
-          marginBottom: 40,
-        }}
-      >
-        Elke 5 minuten: verlagen tot het niet meer kan, reageren zodra iemand jou verdringt
-      </p>
-
-      {/* Main visualization */}
+      {/* Main content */}
       <div
         style={{
           display: 'flex',
-          gap: 40,
-          alignItems: 'flex-start',
+          gap: 60,
+          alignItems: 'center',
         }}
       >
-        {/* Position ranking visual */}
+        {/* Left: Position visualization */}
         <div
           style={{
-            width: 400,
+            width: 380,
             backgroundColor: 'white',
-            borderRadius: 20,
-            padding: 24,
+            borderRadius: 24,
+            padding: 28,
             boxShadow: '0 20px 60px rgba(0, 0, 0, 0.3)',
           }}
         >
           <div
             style={{
-              fontSize: 18,
+              fontSize: 16,
               color: '#6b7280',
               fontFamily: 'system-ui',
-              marginBottom: 20,
+              marginBottom: 24,
               fontWeight: 600,
+              textTransform: 'uppercase',
+              letterSpacing: 1,
             }}
           >
-            Zoekresultaten: "eiwitpoeder"
+            Zoekresultaten
           </div>
 
           {/* Position #1 */}
@@ -119,19 +124,20 @@ export const HowItWorksScene: React.FC = () => {
             style={{
               display: 'flex',
               alignItems: 'center',
-              padding: 16,
-              marginBottom: 8,
-              borderRadius: 12,
-              backgroundColor: yourPosition === 1 ? '#f0fdf4' : competitorPosition === 1 ? '#fef2f2' : '#f9fafb',
-              border: yourPosition === 1 ? '2px solid #22c55e' : competitorPosition === 1 ? '2px solid #f97316' : '2px solid transparent',
-              transform: yourPosition === 1 ? `scale(${positionPulse})` : 'scale(1)',
+              padding: 20,
+              marginBottom: 12,
+              borderRadius: 16,
+              backgroundColor: yourPosition === 1 ? '#f0fdf4' : '#fef2f2',
+              border: yourPosition === 1 ? '3px solid #22c55e' : '3px solid #f97316',
+              transform: `scale(${yourPosition === 1 ? positionPulse : 1})`,
+              boxShadow: yourPosition === 1 ? '0 4px 20px rgba(34, 197, 94, 0.2)' : 'none',
             }}
           >
             <div
               style={{
-                width: 40,
-                height: 40,
-                borderRadius: '50%',
+                width: 50,
+                height: 50,
+                borderRadius: 12,
                 backgroundColor: '#fbbf24',
                 display: 'flex',
                 justifyContent: 'center',
@@ -139,38 +145,19 @@ export const HowItWorksScene: React.FC = () => {
                 marginRight: 16,
               }}
             >
-              <span style={{ fontSize: 20 }}>🥇</span>
+              <span style={{ fontSize: 24, fontWeight: 800, color: 'white' }}>#1</span>
             </div>
             <div style={{ flex: 1 }}>
               <div
                 style={{
-                  fontSize: 18,
+                  fontSize: 20,
                   fontWeight: 700,
                   color: '#1f2937',
                   fontFamily: 'system-ui',
                 }}
               >
-                {yourPosition === 1 ? 'Jouw product' : 'Concurrent'}
+                {yourPosition === 1 ? '🏆 Jouw product' : '😈 Concurrent'}
               </div>
-              <div
-                style={{
-                  fontSize: 14,
-                  color: '#6b7280',
-                  fontFamily: 'system-ui',
-                }}
-              >
-                Positie #1
-              </div>
-            </div>
-            <div
-              style={{
-                fontSize: 24,
-                fontWeight: 800,
-                color: yourPosition === 1 ? '#22c55e' : '#f97316',
-                fontFamily: 'system-ui',
-              }}
-            >
-              €{yourPosition === 1 ? yourBid.toFixed(2) : competitorBid?.toFixed(2)}
             </div>
           </div>
 
@@ -179,19 +166,19 @@ export const HowItWorksScene: React.FC = () => {
             style={{
               display: 'flex',
               alignItems: 'center',
-              padding: 16,
-              marginBottom: 8,
-              borderRadius: 12,
-              backgroundColor: yourPosition === 2 ? '#fef2f2' : competitorPosition === 2 ? '#f9fafb' : '#f9fafb',
-              border: yourPosition === 2 ? `2px solid rgba(239, 68, 68, ${0.5 + alertFlash * 0.5})` : '2px solid transparent',
-              opacity: (yourPosition === 2 || competitorPosition === 2 || phase < 4) ? 1 : 0.5,
+              padding: 20,
+              marginBottom: 12,
+              borderRadius: 16,
+              backgroundColor: yourPosition === 2 ? '#fef2f2' : '#f9fafb',
+              border: yourPosition === 2 ? '3px solid #ef4444' : '2px solid #e5e7eb',
+              opacity: phase >= 4 && yourPosition !== 2 ? 0.5 : 1,
             }}
           >
             <div
               style={{
-                width: 40,
-                height: 40,
-                borderRadius: '50%',
+                width: 50,
+                height: 50,
+                borderRadius: 12,
                 backgroundColor: '#d1d5db',
                 display: 'flex',
                 justifyContent: 'center',
@@ -199,59 +186,39 @@ export const HowItWorksScene: React.FC = () => {
                 marginRight: 16,
               }}
             >
-              <span style={{ fontSize: 20 }}>🥈</span>
+              <span style={{ fontSize: 24, fontWeight: 800, color: 'white' }}>#2</span>
             </div>
             <div style={{ flex: 1 }}>
               <div
                 style={{
-                  fontSize: 18,
+                  fontSize: 20,
                   fontWeight: 700,
-                  color: '#1f2937',
+                  color: yourPosition === 2 ? '#ef4444' : '#9ca3af',
                   fontFamily: 'system-ui',
                 }}
               >
-                {yourPosition === 2 ? 'Jouw product' : phase >= 4 ? '—' : 'Concurrent'}
-              </div>
-              <div
-                style={{
-                  fontSize: 14,
-                  color: '#6b7280',
-                  fontFamily: 'system-ui',
-                }}
-              >
-                Positie #2
+                {yourPosition === 2 ? '😰 Jouw product' : phase >= 4 ? '—' : 'Concurrent'}
               </div>
             </div>
-            {(yourPosition === 2 || competitorPosition === 2) && (
-              <div
-                style={{
-                  fontSize: 24,
-                  fontWeight: 800,
-                  color: yourPosition === 2 ? '#ef4444' : '#6b7280',
-                  fontFamily: 'system-ui',
-                }}
-              >
-                €{yourPosition === 2 ? yourBid.toFixed(2) : competitorBid?.toFixed(2)}
-              </div>
-            )}
           </div>
 
-          {/* Position #3 placeholder */}
+          {/* Position #3 */}
           <div
             style={{
               display: 'flex',
               alignItems: 'center',
-              padding: 16,
-              borderRadius: 12,
+              padding: 20,
+              borderRadius: 16,
               backgroundColor: '#f9fafb',
-              opacity: 0.5,
+              border: '2px solid #e5e7eb',
+              opacity: 0.4,
             }}
           >
             <div
               style={{
-                width: 40,
-                height: 40,
-                borderRadius: '50%',
+                width: 50,
+                height: 50,
+                borderRadius: 12,
                 backgroundColor: '#e5e7eb',
                 display: 'flex',
                 justifyContent: 'center',
@@ -259,59 +226,50 @@ export const HowItWorksScene: React.FC = () => {
                 marginRight: 16,
               }}
             >
-              <span style={{ fontSize: 20 }}>🥉</span>
+              <span style={{ fontSize: 24, fontWeight: 800, color: 'white' }}>#3</span>
             </div>
             <div style={{ flex: 1 }}>
               <div
                 style={{
-                  fontSize: 18,
+                  fontSize: 20,
                   fontWeight: 700,
-                  color: '#9ca3af',
+                  color: '#d1d5db',
                   fontFamily: 'system-ui',
                 }}
               >
                 Ander product
               </div>
-              <div
-                style={{
-                  fontSize: 14,
-                  color: '#d1d5db',
-                  fontFamily: 'system-ui',
-                }}
-              >
-                Positie #3
-              </div>
             </div>
           </div>
         </div>
 
-        {/* Right side - Status & Actions */}
+        {/* Right: Status panel */}
         <div
           style={{
-            width: 450,
+            width: 500,
             display: 'flex',
             flexDirection: 'column',
-            gap: 24,
+            gap: 28,
           }}
         >
-          {/* Current status badge */}
+          {/* Current status */}
           <div
             style={{
-              backgroundColor: `${currentStatus.color}20`,
-              borderRadius: 16,
-              padding: 24,
-              border: `2px solid ${currentStatus.color}50`,
-              transform: `scale(${bidChangeScale})`,
+              backgroundColor: `${currentStatus.color}15`,
+              borderRadius: 20,
+              padding: 32,
+              border: `2px solid ${currentStatus.color}40`,
+              transform: `scale(${Math.min(1, statusScale)})`,
             }}
           >
             <div
               style={{
                 display: 'flex',
                 alignItems: 'center',
-                gap: 16,
+                gap: 20,
               }}
             >
-              <span style={{ fontSize: 48 }}>{currentStatus.emoji}</span>
+              <span style={{ fontSize: 56 }}>{currentStatus.emoji}</span>
               <div>
                 <div
                   style={{
@@ -319,122 +277,115 @@ export const HowItWorksScene: React.FC = () => {
                     fontWeight: 700,
                     color: currentStatus.color,
                     fontFamily: 'system-ui',
+                    marginBottom: 8,
                   }}
                 >
-                  {currentStatus.text}
+                  {currentStatus.title}
+                </div>
+                <div
+                  style={{
+                    fontSize: 18,
+                    color: 'rgba(255, 255, 255, 0.6)',
+                    fontFamily: 'system-ui',
+                  }}
+                >
+                  {currentStatus.subtitle}
                 </div>
               </div>
             </div>
           </div>
 
-          {/* Your bid panel */}
-          <div
-            style={{
-              backgroundColor: 'rgba(34, 197, 94, 0.1)',
-              borderRadius: 16,
-              padding: 24,
-              border: '2px solid rgba(34, 197, 94, 0.3)',
-            }}
-          >
-            <div
-              style={{
-                fontSize: 14,
-                color: 'rgba(255, 255, 255, 0.6)',
-                fontFamily: 'system-ui',
-                marginBottom: 8,
-                textTransform: 'uppercase',
-                letterSpacing: 1,
-              }}
-            >
-              Jouw huidige bod
-            </div>
-            <div
-              style={{
-                fontSize: 48,
-                fontWeight: 800,
-                color: '#22c55e',
-                fontFamily: 'system-ui',
-              }}
-            >
-              €{yourBid.toFixed(2)}
-            </div>
-            <div
-              style={{
-                fontSize: 16,
-                color: 'rgba(255, 255, 255, 0.5)',
-                fontFamily: 'system-ui',
-                marginTop: 8,
-              }}
-            >
-              Max: €1.50
-            </div>
-          </div>
-
-          {/* Position Sticker action */}
+          {/* How it works explanation */}
           <div
             style={{
               backgroundColor: 'rgba(255, 255, 255, 0.05)',
               borderRadius: 16,
-              padding: 20,
-              display: 'flex',
-              alignItems: 'center',
-              gap: 16,
+              padding: 24,
             }}
           >
             <div
               style={{
-                width: 48,
-                height: 48,
-                borderRadius: 12,
-                background: 'linear-gradient(135deg, #22c55e 0%, #16a34a 100%)',
                 display: 'flex',
-                justifyContent: 'center',
                 alignItems: 'center',
+                gap: 16,
+                marginBottom: 16,
               }}
             >
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="white">
-                <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z" />
-              </svg>
-            </div>
-            <div>
               <div
                 style={{
-                  fontSize: 18,
+                  width: 48,
+                  height: 48,
+                  borderRadius: 12,
+                  background: 'linear-gradient(135deg, #22c55e 0%, #16a34a 100%)',
+                  display: 'flex',
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                }}
+              >
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="white">
+                  <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z" />
+                </svg>
+              </div>
+              <span
+                style={{
+                  fontSize: 20,
                   fontWeight: 600,
                   color: 'white',
                   fontFamily: 'system-ui',
                 }}
               >
                 Position Sticker
-              </div>
-              <div
-                style={{
-                  fontSize: 14,
-                  color: 'rgba(255, 255, 255, 0.6)',
-                  fontFamily: 'system-ui',
-                }}
-              >
-                {phase === 1 && 'Monitort je positie...'}
-                {phase === 2 && 'Concurrent gedetecteerd!'}
-                {phase === 3 && 'Bod aangepast naar €0.91'}
-                {phase === 4 && 'Concurrent weg, testen verlaging...'}
-                {phase === 5 && 'Verlaagd naar €0.85 ✓'}
-              </div>
+              </span>
+            </div>
+
+            <div
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 12,
+              }}
+            >
+              {[
+                { icon: '🔍', text: 'Checkt elke 5 minuten je positie' },
+                { icon: '⬇️', text: 'Verlaagt bod als het lager kan' },
+                { icon: '⬆️', text: 'Verhoogt direct bij concurrentie' },
+              ].map((item, i) => (
+                <div
+                  key={i}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 12,
+                    opacity: frame > 60 + i * 30 ? 1 : 0.3,
+                  }}
+                >
+                  <span style={{ fontSize: 20 }}>{item.icon}</span>
+                  <span
+                    style={{
+                      fontSize: 16,
+                      color: 'rgba(255, 255, 255, 0.7)',
+                      fontFamily: 'system-ui',
+                    }}
+                  >
+                    {item.text}
+                  </span>
+                </div>
+              ))}
             </div>
           </div>
         </div>
       </div>
 
-      {/* Timeline indicator */}
+      {/* Progress indicator */}
       <div
         style={{
           marginTop: 50,
           display: 'flex',
-          gap: 16,
+          gap: 8,
           alignItems: 'center',
         }}
       >
-        {[1, 2, 3, 4, 5].map((p) => (
+        {[1, 2, 3, 4].map((p) => (
           <div
             key={p}
             style={{
@@ -445,22 +396,13 @@ export const HowItWorksScene: React.FC = () => {
           >
             <div
               style={{
-                width: 12,
+                width: p === phase ? 40 : 12,
                 height: 12,
-                borderRadius: '50%',
+                borderRadius: 6,
                 backgroundColor: p <= phase ? '#22c55e' : 'rgba(255, 255, 255, 0.2)',
-                transition: 'background-color 0.3s',
+                transition: 'all 0.3s',
               }}
             />
-            {p < 5 && (
-              <div
-                style={{
-                  width: 40,
-                  height: 2,
-                  backgroundColor: p < phase ? '#22c55e' : 'rgba(255, 255, 255, 0.2)',
-                }}
-              />
-            )}
           </div>
         ))}
       </div>

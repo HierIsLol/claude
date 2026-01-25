@@ -10,85 +10,55 @@ export const ResultScene: React.FC = () => {
   });
 
   // Title animation
-  const titleY = spring({
+  const titleScale = spring({
     frame,
     fps,
-    config: { damping: 15, stiffness: 80 },
+    config: { damping: 12, stiffness: 100 },
   });
 
-  // Chart animation
-  const chartProgress = interpolate(frame, [30, 150], [0, 1], {
-    extrapolateRight: 'clamp',
-  });
+  // Benefits cards animation
+  const benefit1Y = spring({ frame: frame - 30, fps, config: { damping: 12, stiffness: 80 } });
+  const benefit2Y = spring({ frame: frame - 50, fps, config: { damping: 12, stiffness: 80 } });
+  const benefit3Y = spring({ frame: frame - 70, fps, config: { damping: 12, stiffness: 80 } });
+  const benefit4Y = spring({ frame: frame - 90, fps, config: { damping: 12, stiffness: 80 } });
 
-  // Stats counter animations
-  const avgBidAnim = interpolate(frame, [60, 120], [0, 0.87], { extrapolateRight: 'clamp' });
-  const manualBidAnim = interpolate(frame, [80, 140], [0, 2.50], { extrapolateRight: 'clamp' });
-  const savingsAnim = interpolate(frame, [120, 180], [0, 65], { extrapolateRight: 'clamp' });
-
-  // Savings badge pop animation
-  const savingsBadgeScale = spring({
-    frame: frame - 150,
+  // Central badge animation
+  const badgeScale = spring({
+    frame: frame - 140,
     fps,
-    config: { damping: 8, stiffness: 120 },
+    config: { damping: 8, stiffness: 100 },
   });
 
-  // Generate position line path (stays at #1)
-  const generatePositionPath = (progress: number) => {
-    const points: [number, number][] = [];
-    const width = 600;
+  // Glow effect
+  const glowIntensity = interpolate(Math.sin(frame * 0.1), [-1, 1], [30, 50]);
 
-    for (let i = 0; i <= 100; i++) {
-      const x = (i / 100) * width;
-      // Stable at position 1 with tiny variations
-      const baseY = 30;
-      const wave = Math.sin(i * 0.15) * 3 + Math.sin(i * 0.08) * 2;
-      const y = baseY + wave;
-
-      if (i / 100 <= progress) {
-        points.push([x, y]);
-      }
-    }
-
-    if (points.length < 2) return '';
-
-    let path = `M ${points[0][0]} ${points[0][1]}`;
-    for (let i = 1; i < points.length; i++) {
-      path += ` L ${points[i][0]} ${points[i][1]}`;
-    }
-    return path;
-  };
-
-  // Generate bid line path (low and efficient)
-  const generateBidPath = (progress: number) => {
-    const points: [number, number][] = [];
-    const width = 600;
-
-    for (let i = 0; i <= 100; i++) {
-      const x = (i / 100) * width;
-      // Low bids around €0.85-€0.90
-      const baseY = 140;
-      const wave = Math.sin(i * 0.1) * 10 + Math.cos(i * 0.15) * 8;
-      const y = baseY + wave;
-
-      if (i / 100 <= progress) {
-        points.push([x, y]);
-      }
-    }
-
-    if (points.length < 2) return '';
-
-    let path = `M ${points[0][0]} ${points[0][1]}`;
-    for (let i = 1; i < points.length; i++) {
-      path += ` L ${points[i][0]} ${points[i][1]}`;
-    }
-    return path;
-  };
-
-  // Bottom tagline animation
-  const taglineOpacity = interpolate(frame, [200, 230], [0, 1], {
+  // Bottom text animation
+  const bottomTextOpacity = interpolate(frame, [200, 230], [0, 1], {
     extrapolateRight: 'clamp',
   });
+
+  const benefits = [
+    {
+      emoji: '🎯',
+      title: 'Altijd je gewenste positie',
+      subtitle: 'Geen verrassingen, geen gemiste verkopen',
+    },
+    {
+      emoji: '💰',
+      title: 'Nooit te veel betalen',
+      subtitle: 'Automatisch de laagste prijs voor jouw plek',
+    },
+    {
+      emoji: '⏰',
+      title: 'Bespaar uren per week',
+      subtitle: 'Geen handmatig aanpassen meer nodig',
+    },
+    {
+      emoji: '😴',
+      title: 'Werkt terwijl jij slaapt',
+      subtitle: '24/7 actief, ook in het weekend',
+    },
+  ];
 
   return (
     <AbsoluteFill
@@ -101,318 +71,145 @@ export const ResultScene: React.FC = () => {
         opacity: sceneOpacity,
       }}
     >
+      {/* Background glow */}
+      <div
+        style={{
+          position: 'absolute',
+          width: 700,
+          height: 700,
+          borderRadius: '50%',
+          background: 'radial-gradient(circle, rgba(34, 197, 94, 0.1) 0%, transparent 60%)',
+          filter: `blur(${glowIntensity}px)`,
+        }}
+      />
+
       {/* Title */}
       <h2
         style={{
-          fontSize: 52,
+          fontSize: 56,
           color: 'white',
           fontFamily: 'system-ui, -apple-system, sans-serif',
           fontWeight: 700,
-          marginBottom: 50,
-          transform: `translateY(${(1 - titleY) * -30}px)`,
+          marginBottom: 60,
+          transform: `scale(${titleScale})`,
+          textAlign: 'center',
         }}
       >
-        Het <span style={{ color: '#22c55e' }}>resultaat</span>
+        Wat je krijgt met{' '}
+        <span style={{ color: '#22c55e' }}>Position Sticker</span>
       </h2>
 
+      {/* Benefits grid */}
       <div
         style={{
-          display: 'flex',
-          gap: 50,
-          alignItems: 'flex-start',
+          display: 'grid',
+          gridTemplateColumns: 'repeat(2, 1fr)',
+          gap: 28,
+          marginBottom: 50,
         }}
       >
-        {/* Left: Chart */}
-        <div
-          style={{
-            width: 700,
-            backgroundColor: 'white',
-            borderRadius: 20,
-            padding: 32,
-            boxShadow: '0 20px 60px rgba(0, 0, 0, 0.3)',
-          }}
-        >
-          <div
-            style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              marginBottom: 24,
-            }}
-          >
-            <span
+        {benefits.map((benefit, index) => {
+          const animationValue = [benefit1Y, benefit2Y, benefit3Y, benefit4Y][index];
+          return (
+            <div
+              key={index}
               style={{
-                fontSize: 20,
-                fontWeight: 600,
-                color: '#1f2937',
-                fontFamily: 'system-ui',
-              }}
-            >
-              Positie & Kosten - 7 dagen
-            </span>
-            <span
-              style={{
-                backgroundColor: '#f0fdf4',
-                color: '#22c55e',
-                padding: '6px 16px',
+                width: 420,
+                backgroundColor: 'rgba(255, 255, 255, 0.05)',
                 borderRadius: 20,
-                fontSize: 14,
-                fontWeight: 600,
-                fontFamily: 'system-ui',
+                padding: 28,
+                border: '1px solid rgba(34, 197, 94, 0.2)',
+                display: 'flex',
+                alignItems: 'flex-start',
+                gap: 20,
+                transform: `translateY(${(1 - Math.max(0, animationValue)) * 40}px)`,
+                opacity: Math.max(0, animationValue),
               }}
             >
-              Stabiel op #1
-            </span>
-          </div>
-
-          {/* Chart area */}
-          <div
-            style={{
-              position: 'relative',
-              height: 200,
-              borderLeft: '2px solid #e5e7eb',
-              borderBottom: '2px solid #e5e7eb',
-              marginLeft: 40,
-            }}
-          >
-            {/* Y-axis labels */}
-            <div style={{ position: 'absolute', left: -35, top: 20, fontSize: 12, color: '#9ca3af', fontFamily: 'system-ui' }}>
-              #1
-            </div>
-            <div style={{ position: 'absolute', left: -35, top: 80, fontSize: 12, color: '#9ca3af', fontFamily: 'system-ui' }}>
-              #3
-            </div>
-            <div style={{ position: 'absolute', left: -35, top: 140, fontSize: 12, color: '#9ca3af', fontFamily: 'system-ui' }}>
-              €1
-            </div>
-            <div style={{ position: 'absolute', left: -35, top: 180, fontSize: 12, color: '#9ca3af', fontFamily: 'system-ui' }}>
-              €0
-            </div>
-
-            {/* Grid lines */}
-            {[1, 2, 3].map((i) => (
               <div
-                key={i}
                 style={{
-                  position: 'absolute',
-                  left: 0,
-                  right: 0,
-                  top: i * 50,
-                  height: 1,
-                  backgroundColor: '#f3f4f6',
+                  width: 64,
+                  height: 64,
+                  borderRadius: 16,
+                  backgroundColor: 'rgba(34, 197, 94, 0.15)',
+                  display: 'flex',
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                  flexShrink: 0,
                 }}
-              />
-            ))}
-
-            {/* Position Line (Green - stable at #1) */}
-            <svg
-              style={{
-                position: 'absolute',
-                left: 10,
-                top: 0,
-                width: 600,
-                height: 200,
-              }}
-            >
-              <path
-                d={generatePositionPath(chartProgress)}
-                fill="none"
-                stroke="#22c55e"
-                strokeWidth="4"
-                strokeLinecap="round"
-              />
-            </svg>
-
-            {/* Bid Line (Blue - low and efficient) */}
-            <svg
-              style={{
-                position: 'absolute',
-                left: 10,
-                top: 0,
-                width: 600,
-                height: 200,
-              }}
-            >
-              <path
-                d={generateBidPath(chartProgress)}
-                fill="none"
-                stroke="#3b82f6"
-                strokeWidth="3"
-                strokeLinecap="round"
-              />
-            </svg>
-          </div>
-
-          {/* Legend */}
-          <div
-            style={{
-              display: 'flex',
-              justifyContent: 'center',
-              gap: 40,
-              marginTop: 20,
-            }}
-          >
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <div style={{ width: 24, height: 4, backgroundColor: '#22c55e', borderRadius: 2 }} />
-              <span style={{ color: '#6b7280', fontSize: 14, fontFamily: 'system-ui' }}>Positie</span>
+              >
+                <span style={{ fontSize: 32 }}>{benefit.emoji}</span>
+              </div>
+              <div>
+                <h3
+                  style={{
+                    fontSize: 22,
+                    color: 'white',
+                    fontFamily: 'system-ui',
+                    fontWeight: 700,
+                    marginBottom: 8,
+                  }}
+                >
+                  {benefit.title}
+                </h3>
+                <p
+                  style={{
+                    fontSize: 16,
+                    color: 'rgba(255, 255, 255, 0.6)',
+                    fontFamily: 'system-ui',
+                    lineHeight: 1.5,
+                  }}
+                >
+                  {benefit.subtitle}
+                </p>
+              </div>
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <div style={{ width: 24, height: 4, backgroundColor: '#3b82f6', borderRadius: 2 }} />
-              <span style={{ color: '#6b7280', fontSize: 14, fontFamily: 'system-ui' }}>Bod (CPC)</span>
-            </div>
-          </div>
-        </div>
+          );
+        })}
+      </div>
 
-        {/* Right: Stats */}
-        <div
+      {/* Central success badge */}
+      <div
+        style={{
+          transform: `scale(${Math.max(0, badgeScale)})`,
+          display: 'flex',
+          alignItems: 'center',
+          gap: 16,
+          padding: '20px 40px',
+          background: 'linear-gradient(135deg, #22c55e 0%, #16a34a 100%)',
+          borderRadius: 60,
+          boxShadow: `0 10px 40px rgba(34, 197, 94, 0.4), 0 0 ${glowIntensity}px rgba(34, 197, 94, 0.3)`,
+        }}
+      >
+        <span style={{ fontSize: 36 }}>✨</span>
+        <span
           style={{
-            display: 'flex',
-            flexDirection: 'column',
-            gap: 24,
+            fontSize: 28,
+            fontWeight: 700,
+            color: 'white',
+            fontFamily: 'system-ui',
           }}
         >
-          {/* Average bid with Position Sticker */}
-          <div
-            style={{
-              backgroundColor: 'rgba(34, 197, 94, 0.1)',
-              borderRadius: 20,
-              padding: 28,
-              border: '2px solid rgba(34, 197, 94, 0.3)',
-              minWidth: 280,
-            }}
-          >
-            <div
-              style={{
-                fontSize: 14,
-                color: 'rgba(255, 255, 255, 0.6)',
-                fontFamily: 'system-ui',
-                marginBottom: 8,
-                textTransform: 'uppercase',
-                letterSpacing: 1,
-              }}
-            >
-              Gemiddeld bod
-            </div>
-            <div
-              style={{
-                fontSize: 56,
-                fontWeight: 800,
-                color: '#22c55e',
-                fontFamily: 'system-ui',
-              }}
-            >
-              €{avgBidAnim.toFixed(2)}
-            </div>
-            <div
-              style={{
-                fontSize: 14,
-                color: 'rgba(255, 255, 255, 0.5)',
-                fontFamily: 'system-ui',
-                marginTop: 4,
-              }}
-            >
-              met Position Sticker
-            </div>
-          </div>
-
-          {/* Manual bid comparison */}
-          <div
-            style={{
-              backgroundColor: 'rgba(239, 68, 68, 0.1)',
-              borderRadius: 20,
-              padding: 28,
-              border: '2px solid rgba(239, 68, 68, 0.3)',
-            }}
-          >
-            <div
-              style={{
-                fontSize: 14,
-                color: 'rgba(255, 255, 255, 0.6)',
-                fontFamily: 'system-ui',
-                marginBottom: 8,
-                textTransform: 'uppercase',
-                letterSpacing: 1,
-              }}
-            >
-              Handmatig bieden
-            </div>
-            <div
-              style={{
-                fontSize: 56,
-                fontWeight: 800,
-                color: '#ef4444',
-                fontFamily: 'system-ui',
-                textDecoration: 'line-through',
-                textDecorationColor: 'rgba(239, 68, 68, 0.5)',
-              }}
-            >
-              €{manualBidAnim.toFixed(2)}
-            </div>
-            <div
-              style={{
-                fontSize: 14,
-                color: 'rgba(255, 255, 255, 0.5)',
-                fontFamily: 'system-ui',
-                marginTop: 4,
-              }}
-            >
-              om "zeker" te zijn
-            </div>
-          </div>
-
-          {/* Savings badge */}
-          <div
-            style={{
-              backgroundColor: '#22c55e',
-              borderRadius: 20,
-              padding: 24,
-              textAlign: 'center',
-              transform: `scale(${Math.max(0, savingsBadgeScale)})`,
-              boxShadow: '0 10px 30px rgba(34, 197, 94, 0.4)',
-            }}
-          >
-            <div
-              style={{
-                fontSize: 18,
-                color: 'rgba(255, 255, 255, 0.9)',
-                fontFamily: 'system-ui',
-                marginBottom: 4,
-              }}
-            >
-              Je bespaart
-            </div>
-            <div
-              style={{
-                fontSize: 48,
-                fontWeight: 800,
-                color: 'white',
-                fontFamily: 'system-ui',
-              }}
-            >
-              -{Math.round(savingsAnim)}%
-            </div>
-          </div>
-        </div>
+          Meer sales, minder kosten, nul gedoe
+        </span>
+        <span style={{ fontSize: 36 }}>✨</span>
       </div>
 
       {/* Bottom tagline */}
       <div
         style={{
           marginTop: 50,
-          opacity: taglineOpacity,
+          opacity: bottomTextOpacity,
         }}
       >
         <span
           style={{
-            fontSize: 32,
-            color: 'white',
+            fontSize: 24,
+            color: 'rgba(255, 255, 255, 0.7)',
             fontFamily: 'system-ui',
-            fontWeight: 600,
           }}
         >
-          Jouw plek. De laagst mogelijke bieding.{' '}
-          <span style={{ color: '#22c55e' }}>Altijd.</span>{' '}
-          <span style={{ fontSize: 36 }}>🎯</span>
+          Meer dan 500 verkopers gingen je voor
         </span>
       </div>
     </AbsoluteFill>
