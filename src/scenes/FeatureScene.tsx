@@ -33,8 +33,12 @@ export const FeatureScene: React.FC = () => {
   // Bid optimization animation for feature 2
   const bidOptimize = interpolate(frame, [110, 160], [2.50, 0.85], { extrapolateRight: 'clamp' });
 
-  // Response time counter for feature 3
-  const responseTime = interpolate(frame, [200, 240], [0, 5], { extrapolateRight: 'clamp' });
+  // Response time counter for feature 3 (15 -> 5)
+  const responseTime = interpolate(frame, [200, 240], [15, 5], { extrapolateRight: 'clamp' });
+
+  // Subtle floating animation for liveliness
+  const floatY = Math.sin(frame * 0.05) * 8;
+  const glowPulse = interpolate(Math.sin(frame * 0.08), [-1, 1], [0.3, 0.6]);
 
   return (
     <AbsoluteFill
@@ -45,12 +49,24 @@ export const FeatureScene: React.FC = () => {
         alignItems: 'center',
       }}
     >
+      {/* Background glow */}
+      <div
+        style={{
+          position: 'absolute',
+          width: 600,
+          height: 600,
+          borderRadius: '50%',
+          background: `radial-gradient(circle, rgba(34, 197, 94, ${glowPulse * 0.15}) 0%, transparent 70%)`,
+          filter: 'blur(60px)',
+        }}
+      />
+
       {/* Feature 1: Kies je positie */}
       <div
         style={{
           position: 'absolute',
           opacity: f1Opacity,
-          transform: `scale(${Math.max(0.9, f1Scale)})`,
+          transform: `scale(${Math.max(0.9, f1Scale)}) translateY(${floatY}px)`,
           textAlign: 'center',
         }}
       >
@@ -75,6 +91,7 @@ export const FeatureScene: React.FC = () => {
             color: 'white',
             fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif',
             lineHeight: 1,
+            textShadow: `0 0 ${40 + glowPulse * 40}px rgba(34, 197, 94, ${glowPulse})`,
           }}
         >
           #{Math.round(positionValue)}
@@ -97,7 +114,7 @@ export const FeatureScene: React.FC = () => {
         style={{
           position: 'absolute',
           opacity: f2Opacity,
-          transform: `scale(${Math.max(0.9, f2Scale)})`,
+          transform: `scale(${Math.max(0.9, f2Scale)}) translateY(${floatY}px)`,
           textAlign: 'center',
         }}
       >
@@ -200,7 +217,7 @@ export const FeatureScene: React.FC = () => {
         style={{
           position: 'absolute',
           opacity: f3Opacity,
-          transform: `scale(${Math.max(0.9, f3Scale)})`,
+          transform: `scale(${Math.max(0.9, f3Scale)}) translateY(${floatY}px)`,
           textAlign: 'center',
         }}
       >
@@ -265,7 +282,7 @@ export const FeatureScene: React.FC = () => {
         style={{
           position: 'absolute',
           opacity: f4Opacity,
-          transform: `scale(${Math.max(0.9, f4Scale)})`,
+          transform: `scale(${Math.max(0.9, f4Scale)}) translateY(${floatY}px)`,
           textAlign: 'center',
         }}
       >
@@ -347,7 +364,7 @@ export const FeatureScene: React.FC = () => {
                 margin: 0,
               }}
             >
-              €0
+              0
             </p>
             <p
               style={{
