@@ -13,13 +13,13 @@ import {
 const C = {
   navy:    '#12213f',
   blue:    '#4a6fa5',
-  red:     '#e05c3a',
+  red:     '#c97868',   // muted terracotta — minder fel rood
   bg:      '#edf1f8',
   card:    '#ffffff',
   surface: '#f4f7fc',
   muted:   '#8899aa',
   blobB:   'rgba(74,111,165,0.13)',
-  blobR:   'rgba(224,92,58,0.10)',
+  blobR:   'rgba(201,120,104,0.10)',
 };
 
 // ─── Animation timing (frames @ 30 fps ≈ 8 s) ─────────────────────────────────
@@ -32,23 +32,25 @@ const C = {
 // 210 – 240 : Fade-out
 //
 const T = {
-  logo:     5,
-  dash:     30,
-  card1:    45,
-  card2:    60,
-  card3:    73,
-  chart:    78,
-  chartEnd: 190,
-  zoomIn:   115,   // zoom starts at ~47% of chart draw (lines still animating)
-  zoomEnd:  210,
-  fadeOut:  210,
-  end:      240,
+  logo:      5,
+  dash:      30,
+  card1:     45,
+  card2:     60,
+  card3:     73,
+  chart:     78,
+  chartEnd:  185,
+  zoomIn:    115,   // zoom starts while lines still animate
+  zoomEnd:   215,
+  spikeIn:   188,   // lijn schiet omhoog aan het einde
+  spikeEnd:  218,
+  fadeOut:   218,
+  end:       248,
 };
 
 // ─── Chart data (normalised 0–1, 1 = top) ────────────────────────────────────
 
-const OMZET_RAW  = [0.38, 0.34, 0.42, 0.52, 0.61, 0.59, 0.62, 0.59, 0.47, 0.43, 0.53, 0.78];
-const KOSTEN_RAW = [0.26, 0.21, 0.28, 0.36, 0.50, 0.42, 0.45, 0.35, 0.24, 0.35, 0.52, 0.80];
+const OMZET_RAW  = [0.38, 0.34, 0.42, 0.52, 0.61, 0.59, 0.62, 0.59, 0.47, 0.43, 0.53, 0.72];
+const KOSTEN_RAW = [0.26, 0.21, 0.28, 0.36, 0.50, 0.42, 0.45, 0.35, 0.24, 0.35, 0.52, 0.76];
 
 const CW = 900, CH = 310, PL = 35, PB = 25;
 const CBOT = CH - PB;
@@ -161,6 +163,12 @@ export const AdpalDashboard: React.FC = () => {
     easing: Easing.inOut(Easing.quad),
   });
 
+  // End spike — omzet-lijn schiet omhoog na het tekenen
+  const spikeProg = interpolate(frame, [T.spikeIn, T.spikeEnd], [0, 1], {
+    ...clamp,
+    easing: Easing.out(Easing.cubic),
+  });
+
   // Camera zoom into chart — starts while lines are mid-draw
   const zoomProg = interpolate(frame, [T.zoomIn, T.zoomEnd], [0, 1], {
     ...clamp,
@@ -170,24 +178,28 @@ export const AdpalDashboard: React.FC = () => {
   // Fade-out
   const opacity = interpolate(frame, [T.fadeOut, T.end], [1, 0], clamp);
 
-  // ── 3-D zoom toward the white chart area ──────────────────────────────────
-  //  Small tilt gives depth; pivot sits over the chart (≈ 68 % from top)
-  const rotX  = zoomProg * 8;           // subtle tilt
-  const rotY  = zoomProg * -4;
-  const scale = 1 + zoomProg * 1.65;    // 1 → 2.65
+  // ── 3-D zoom — sterke zijkant-rotatie ────────────────────────────────────
+  const rotX  = zoomProg * 18;    // meer naar voren/achteren kantelen
+  const rotY  = zoomProg * -32;   // sterk van de zijkant
+  const scale = 1 + zoomProg * 1.9;
 
-  // Pivot moves toward chart as zoom progresses
-  const pivotY = interpolate(frame, [T.zoomIn, T.zoomEnd], [50, 70], clamp);
+  // Pivot verschuift naar chart
+  const pivotY = interpolate(frame, [T.zoomIn, T.zoomEnd], [50, 68], clamp);
 
   const transform3D = [
-    'perspective(1000px)',
+    'perspective(800px)',
     `rotateX(${rotX}deg)`,
     `rotateY(${rotY}deg)`,
     `scale(${scale.toFixed(4)})`,
   ].join(' ');
 
+  // Dynamische punten: laatste punt van omzet schiet omhoog bij spike
+  const spikeTopY = 0.72 + spikeProg * 0.24;   // 0.72 → 0.96
+  const omzetDynamic = [...OMZET_RAW.slice(0, -1), spikeTopY];
+  const omzetDynPts  = buildPoints(omzetDynamic);
+
   // Chart paths (smooth curves)
-  const omz = smoothChart(OMZET_PTS, chartProg);
+  const omz = smoothChart(omzetDynPts, Math.max(chartProg, spikeProg > 0 ? 1 : 0));
   const kst = smoothChart(KOSTEN_PTS, chartProg);
   const chartVisible = chartProg > 0.02;
 
