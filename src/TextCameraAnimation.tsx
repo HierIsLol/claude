@@ -94,21 +94,22 @@ function Line({
   const cameraProgress = frame / FRAMES_PER_LINE;
   const lineRelativePos = index - cameraProgress;
 
-  // Opacity: visible in corridor ahead, bright at passing moment, gone quickly after
+  // Opacity: legible window stays fully visible, fades fast after passing
   const opacity = interpolate(
     lineRelativePos,
-    [-0.18, -0.05, 0.0, 0.2, 0.7, 1.6, 3.5],
-    [0,     0.05,  1,   1,   0.7, 0.3, 0],
+    [-0.18, -0.05, 0.0, 0.3, 0.55, 0.9, 1.8, 3.5],
+    [0,     0.05,  1,   1,   1,    0.6, 0.2, 0],
     { extrapolateLeft: "clamp", extrapolateRight: "clamp" }
   );
 
-  // Scale: small in distance → enormous at camera → off-screen behind
-  // At lineRelativePos=0 (at camera): fills the screen
-  // At lineRelativePos=-0.15 (just passed): huge blowout
+  // Scale: tiny far away → readable sweet spot → screen-filling blowout as it passes
+  // lineRelativePos 0.55–0.35 = legible zone (scale ~1.1–1.6)
+  // lineRelativePos 0.15 = starts growing fast
+  // lineRelativePos 0 = fills screen
   const scale = interpolate(
     lineRelativePos,
-    [-0.2,  0,    0.15, 0.4,  0.8,  1.4,  2.5,  4],
-    [18,    9,    4.5,  2.0,  1.1,  0.65, 0.38, 0.20],
+    [-0.2,  0,   0.15, 0.35, 0.55, 0.9,  1.5,  2.5,  4],
+    [18,    8,   3.8,  1.6,  1.1,  0.75, 0.50, 0.34, 0.18],
     { extrapolateLeft: "clamp", extrapolateRight: "clamp" }
   );
 
@@ -174,38 +175,6 @@ function Line({
   );
 }
 
-function AccentLine({ frame }: { frame: number }) {
-  const cameraProgress = frame / FRAMES_PER_LINE;
-  const currentLineIndex = Math.floor(cameraProgress);
-  const lineProgress = cameraProgress - currentLineIndex;
-
-  // Show accent line only in the mid-range before text blows up
-  const opacity = interpolate(lineProgress, [0.1, 0.25, 0.65, 0.82], [0, 1, 1, 0], {
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
-  });
-
-  const width = interpolate(lineProgress, [0.1, 0.35, 0.65, 0.82], [0, 80, 80, 0], {
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
-  });
-
-  return (
-    <div
-      style={{
-        position: "absolute",
-        left: "50%",
-        top: "50%",
-        transform: "translateX(-50%) translateY(calc(-50% + 56px))",
-        width,
-        height: 4,
-        borderRadius: 2,
-        background: "linear-gradient(90deg, #4a7fe0, #6fa0ff)",
-        opacity,
-      }}
-    />
-  );
-}
 
 function ProgressDots({ frame }: { frame: number }) {
   const cameraProgress = frame / FRAMES_PER_LINE;
@@ -302,7 +271,6 @@ export function TextCameraAnimation() {
             isLastLine={i === LINES.length - 1}
           />
         ))}
-        <AccentLine frame={frame} />
       </div>
 
       <ProgressDots frame={frame} />
