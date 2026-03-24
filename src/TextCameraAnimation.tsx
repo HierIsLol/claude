@@ -2,7 +2,6 @@ import React from "react";
 import {
   AbsoluteFill,
   useCurrentFrame,
-  useVideoConfig,
   interpolate,
 } from "remotion";
 
@@ -15,46 +14,44 @@ const LINES = [
   "Of lekker AdPal alles laten doen",
 ];
 
-// Faster: 42 frames per line
 const FRAMES_PER_LINE = 42;
 const TOTAL_FRAMES = LINES.length * FRAMES_PER_LINE;
 
-// Animated blobs that scale/move with camera parallax
+// Stagger each line slightly off-center so camera "weaves" through them
+const LINE_Y_OFFSETS = [0, 38, -28, 22, -36, 0];
+
+// ─── Blobs ──────────────────────────────────────────────────────────────────
+
 function Blob({
   frame,
   baseX,
   baseY,
   size,
   color,
-  zDepth, // 0 = same speed as camera, 1 = slow (far), -1 = fast (close)
+  zDepth,
 }: {
   frame: number;
-  baseX: number; // % from left
-  baseY: number; // % from top
+  baseX: number;
+  baseY: number;
   size: number;
   color: string;
-  zDepth: number;
+  zDepth: number; // 1 = far/slow, 0 = close/fast
 }) {
-  const cameraProgress = frame / FRAMES_PER_LINE;
+  const cam = frame / FRAMES_PER_LINE;
+  const factor = 1 - zDepth;
+  const drive = cam * factor;
 
-  // Parallax: blobs closer to camera move faster and scale up more
-  const parallaxFactor = 1 - zDepth; // zDepth 0.8 = far/slow, 0.2 = close/fast
-  const scaleDrive = cameraProgress * parallaxFactor;
-
-  const scale = interpolate(scaleDrive, [0, LINES.length], [1, 1 + parallaxFactor * 2.5], {
+  const scale = interpolate(drive, [0, LINES.length], [1, 1 + factor * 3], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
   });
 
-  // Drift slightly outward from center as camera approaches
-  const cx = 50;
-  const cy = 50;
-  const driftX = (baseX - cx) * (scale - 1) * 0.6;
-  const driftY = (baseY - cy) * (scale - 1) * 0.6;
+  const driftX = (baseX - 50) * (scale - 1) * 0.55;
+  const driftY = (baseY - 50) * (scale - 1) * 0.55;
 
   const opacity = interpolate(
-    scaleDrive,
-    [0, 0.3, LINES.length - 0.5, LINES.length],
+    drive,
+    [0, 0.4, LINES.length - 0.4, LINES.length],
     [0, 1, 1, 0],
     { extrapolateLeft: "clamp", extrapolateRight: "clamp" }
   );
@@ -72,13 +69,13 @@ function Blob({
         transform: `translate(-50%, -50%) scale(${scale})`,
         opacity,
         willChange: "transform, opacity",
+        filter: "blur(60px)",
       }}
     />
   );
 }
 
-// Per-line vertical offset so lines feel like they're staggered in a corridor
-const LINE_Y_OFFSETS = [0, 40, -30, 20, -40, 10];
+// ─── Text line ───────────────────────────────────────────────────────────────
 
 function Line({
   text,
@@ -91,61 +88,74 @@ function Line({
   frame: number;
   isLastLine: boolean;
 }) {
-  const cameraProgress = frame / FRAMES_PER_LINE;
-  const lineRelativePos = index - cameraProgress;
+  const cam = frame / FRAMES_PER_LINE;
+  const rel = index - cam; // positive = ahead, negative = behind
 
-  // Opacity: legible window stays fully visible, fades fast after passing
+  // Opacity: dim in tunnel → fully lit at readable window → quick fade on pass
   const opacity = interpolate(
-    lineRelativePos,
-    [-0.18, -0.05, 0.0, 0.3, 0.55, 0.9, 1.8, 3.5],
-    [0,     0.05,  1,   1,   1,    0.6, 0.2, 0],
+    rel,
+    [-0.16, -0.04, 0.0, 0.28, 0.52, 0.95, 2.0, 4.0],
+    [0,     0.04,  1,   1,    1,    0.55, 0.15, 0],
     { extrapolateLeft: "clamp", extrapolateRight: "clamp" }
   );
 
-  // Scale: tiny far away → readable sweet spot → screen-filling blowout as it passes
-  // lineRelativePos 0.55–0.35 = legible zone (scale ~1.1–1.6)
-  // lineRelativePos 0.15 = starts growing fast
-  // lineRelativePos 0 = fills screen
+  // Scale: tiny dot → snaps into readable size → explodes past camera
   const scale = interpolate(
-    lineRelativePos,
-    [-0.2,  0,   0.15, 0.35, 0.55, 0.9,  1.5,  2.5,  4],
-    [18,    8,   3.8,  1.6,  1.1,  0.75, 0.50, 0.34, 0.18],
+    rel,
+    [-0.18, 0,   0.14, 0.34, 0.54, 0.95, 1.6,  2.6,  4.2],
+    [16,    7.5, 3.4,  1.55, 1.08, 0.72, 0.46, 0.30, 0.16],
     { extrapolateLeft: "clamp", extrapolateRight: "clamp" }
   );
 
-  // Vertical stagger: each line is slightly offset so the camera weaves past them
-  const baseYOffset = LINE_Y_OFFSETS[index % LINE_Y_OFFSETS.length];
-
-  // Drift the line toward center as it approaches, then let scale carry it away
+  // Vertical drift: each line sits at its stagger offset
+  const baseY = LINE_Y_OFFSETS[index % LINE_Y_OFFSETS.length];
   const yDrift = interpolate(
-    lineRelativePos,
-    [0, 0.5, 1.5, 3.5],
-    [baseYOffset * 0.3, baseYOffset * 0.6, baseYOffset, baseYOffset],
+    rel,
+    [0, 0.5, 1.5, 4],
+    [baseY * 0.25, baseY * 0.55, baseY, baseY],
     { extrapolateLeft: "clamp", extrapolateRight: "clamp" }
   );
 
-  const isActive = lineRelativePos > -0.15 && lineRelativePos < 0.25;
-  const isPassed = lineRelativePos < -0.05;
-  const activeColor = isLastLine ? "#4a7fe0" : "rgb(20, 35, 80)";
+  // Color: muted far → bright white in readable zone → electric on pass
+  const isReadable = rel > 0.25 && rel < 0.65;
+  const isActive   = rel > -0.14 && rel < 0.26;
+  const isPassed   = rel < -0.04;
 
-  const colorValue = interpolate(
-    lineRelativePos,
-    [-0.15, 0, 0.3, 1.0, 2.0],
-    [30, 20, 60, 110, 155],
+  let color: string;
+  if (isPassed) {
+    color = "rgba(255,255,255,0.03)";
+  } else if (isActive) {
+    color = isLastLine ? "#7eb8ff" : "#ffffff";
+  } else if (isReadable) {
+    color = isLastLine ? "#a8d0ff" : "#f0f4ff";
+  } else {
+    const v = interpolate(rel, [0.65, 1.5, 3.5], [200, 130, 70], {
+      extrapolateLeft: "clamp",
+      extrapolateRight: "clamp",
+    });
+    color = `rgba(${v}, ${v + 10}, ${Math.min(v + 40, 220)}, ${interpolate(rel, [0.65, 2, 4], [0.85, 0.5, 0.1], { extrapolateLeft: "clamp", extrapolateRight: "clamp" })})`;
+  }
+
+  // Glow at readable peak
+  const glowIntensity = interpolate(
+    rel,
+    [0.2, 0.42, 0.65],
+    [0, 1, 0],
     { extrapolateLeft: "clamp", extrapolateRight: "clamp" }
   );
+  const glowColor = isLastLine
+    ? `rgba(100, 170, 255, ${glowIntensity * 0.6})`
+    : `rgba(200, 220, 255, ${glowIntensity * 0.45})`;
+  const textShadow =
+    glowIntensity > 0.05
+      ? `0 0 ${30 * glowIntensity}px ${glowColor}, 0 0 ${80 * glowIntensity}px ${glowColor}`
+      : "none";
 
-  const color = isPassed
-    ? `rgba(20, 35, 80, 0.06)`
-    : isActive
-    ? activeColor
-    : `rgb(${colorValue}, ${colorValue + 15}, ${Math.min(colorValue + 50, 170)})`;
-
-  // Motion blur: strongest just as it blasts past camera
+  // Motion blur right as line blasts past
   const blur = interpolate(
-    lineRelativePos,
-    [-0.2, -0.08, 0, 0.1, 0.4, 1.5],
-    [8,    3,     0, 0,   1,   4],
+    rel,
+    [-0.18, -0.06, 0, 0.1, 0.5, 1.5],
+    [10,    4,     0, 0,   0.5, 3.5],
     { extrapolateLeft: "clamp", extrapolateRight: "clamp" }
   );
 
@@ -158,16 +168,17 @@ function Line({
         transform: `translateX(-50%) translateY(calc(-50% + ${yDrift}px)) scale(${scale})`,
         opacity,
         color,
-        fontSize: 68,
+        fontSize: 64,
         fontWeight: 700,
         fontFamily:
           '"Avenir Next", "Avenir", "Nunito Sans", system-ui, -apple-system, sans-serif',
-        letterSpacing: "-0.02em",
+        letterSpacing: "-0.025em",
+        textShadow,
         filter: blur > 0 ? `blur(${blur}px)` : "none",
         whiteSpace: "nowrap",
         willChange: "transform, opacity",
         textAlign: "center",
-        lineHeight: 1.0,
+        lineHeight: 1,
       }}
     >
       {text}
@@ -175,34 +186,40 @@ function Line({
   );
 }
 
+// ─── Progress dots ───────────────────────────────────────────────────────────
 
 function ProgressDots({ frame }: { frame: number }) {
-  const cameraProgress = frame / FRAMES_PER_LINE;
-  const currentIndex = Math.min(Math.floor(cameraProgress), LINES.length - 1);
+  const cam = frame / FRAMES_PER_LINE;
+  const current = Math.min(Math.floor(cam), LINES.length - 1);
 
   return (
     <div
       style={{
         position: "absolute",
-        bottom: 56,
+        bottom: 52,
         left: "50%",
         transform: "translateX(-50%)",
         display: "flex",
-        gap: 8,
+        gap: 9,
         alignItems: "center",
       }}
     >
       {LINES.map((_, i) => {
-        const isActive = i === currentIndex;
-        const isPast = i < currentIndex;
+        const isActive = i === current;
+        const isPast = i < current;
         return (
           <div
             key={i}
             style={{
-              width: isActive ? 24 : 8,
+              width: isActive ? 28 : 8,
               height: 8,
               borderRadius: 4,
-              background: isActive ? "#4a7fe0" : isPast ? "#b8c8e6" : "#dde3f0",
+              background: isActive
+                ? "rgba(120, 175, 255, 0.9)"
+                : isPast
+                ? "rgba(255,255,255,0.25)"
+                : "rgba(255,255,255,0.12)",
+              boxShadow: isActive ? "0 0 10px rgba(100,160,255,0.6)" : "none",
             }}
           />
         );
@@ -211,56 +228,44 @@ function ProgressDots({ frame }: { frame: number }) {
   );
 }
 
+// ─── Vignette ────────────────────────────────────────────────────────────────
+
+function Vignette() {
+  return (
+    <div
+      style={{
+        position: "absolute",
+        inset: 0,
+        background:
+          "radial-gradient(ellipse 85% 85% at 50% 50%, transparent 40%, rgba(4,6,16,0.75) 100%)",
+        pointerEvents: "none",
+      }}
+    />
+  );
+}
+
+// ─── Root ────────────────────────────────────────────────────────────────────
+
 export function TextCameraAnimation() {
   const frame = useCurrentFrame();
 
   return (
     <AbsoluteFill
       style={{
-        background: "linear-gradient(160deg, #f9f8f5 0%, #ede9e0 100%)",
+        background: "linear-gradient(145deg, #07091a 0%, #0c1124 55%, #080d1c 100%)",
         overflow: "hidden",
-        fontFamily:
-          '"Avenir Next", "Avenir", "Nunito Sans", system-ui, -apple-system, sans-serif',
       }}
     >
-      {/* Blue blob — top-left, far away (slow parallax) */}
-      <Blob
-        frame={frame}
-        baseX={-8}
-        baseY={10}
-        size={680}
-        color="rgba(180, 200, 240, 0.28)"
-        zDepth={0.75}
-      />
-      {/* Orange/salmon blob — bottom-right, medium distance */}
-      <Blob
-        frame={frame}
-        baseX={108}
-        baseY={88}
-        size={520}
-        color="rgba(230, 180, 155, 0.28)"
-        zDepth={0.55}
-      />
-      {/* Smaller blue blob — mid-right, closer (faster parallax) */}
-      <Blob
-        frame={frame}
-        baseX={95}
-        baseY={18}
-        size={300}
-        color="rgba(160, 190, 235, 0.18)"
-        zDepth={0.3}
-      />
-      {/* Small orange blob — bottom-left, close */}
-      <Blob
-        frame={frame}
-        baseX={5}
-        baseY={90}
-        size={240}
-        color="rgba(235, 175, 145, 0.2)"
-        zDepth={0.25}
-      />
+      {/* Large blue nebula — top-left, far */}
+      <Blob frame={frame} baseX={-12} baseY={8}   size={820} color="rgba(60,110,230,0.18)"  zDepth={0.78} />
+      {/* Warm amber — bottom-right, mid */}
+      <Blob frame={frame} baseX={112} baseY={90}  size={640} color="rgba(220,130,60,0.18)"  zDepth={0.58} />
+      {/* Small blue accent — right, closer */}
+      <Blob frame={frame} baseX={98}  baseY={15}  size={340} color="rgba(80,150,255,0.14)"  zDepth={0.32} />
+      {/* Small amber accent — left, closer */}
+      <Blob frame={frame} baseX={4}   baseY={88}  size={280} color="rgba(240,160,90,0.14)"  zDepth={0.28} />
 
-      {/* Text lines */}
+      {/* Text tunnel */}
       <div style={{ position: "absolute", inset: 0 }}>
         {LINES.map((line, i) => (
           <Line
@@ -272,6 +277,9 @@ export function TextCameraAnimation() {
           />
         ))}
       </div>
+
+      {/* Depth vignette */}
+      <Vignette />
 
       <ProgressDots frame={frame} />
     </AbsoluteFill>
