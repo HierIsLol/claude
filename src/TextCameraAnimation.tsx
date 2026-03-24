@@ -77,6 +77,9 @@ function Blob({
   );
 }
 
+// Per-line vertical offset so lines feel like they're staggered in a corridor
+const LINE_Y_OFFSETS = [0, 40, -30, 20, -40, 10];
+
 function Line({
   text,
   index,
@@ -91,57 +94,57 @@ function Line({
   const cameraProgress = frame / FRAMES_PER_LINE;
   const lineRelativePos = index - cameraProgress;
 
+  // Opacity: visible in corridor ahead, bright at passing moment, gone quickly after
   const opacity = interpolate(
     lineRelativePos,
-    [-0.35, -0.05, 0, 0.25, 1.4, 3],
-    [0, 0.12, 1, 0.92, 0.35, 0],
+    [-0.18, -0.05, 0.0, 0.2, 0.7, 1.6, 3.5],
+    [0,     0.05,  1,   1,   0.7, 0.3, 0],
     { extrapolateLeft: "clamp", extrapolateRight: "clamp" }
   );
 
+  // Scale: small in distance → enormous at camera → off-screen behind
+  // At lineRelativePos=0 (at camera): fills the screen
+  // At lineRelativePos=-0.15 (just passed): huge blowout
   const scale = interpolate(
     lineRelativePos,
-    [-0.5, 0, 0.5, 1, 2, 4],
-    [2.1, 1.08, 0.82, 0.66, 0.46, 0.28],
+    [-0.2,  0,    0.15, 0.4,  0.8,  1.4,  2.5,  4],
+    [18,    9,    4.5,  2.0,  1.1,  0.65, 0.38, 0.20],
     { extrapolateLeft: "clamp", extrapolateRight: "clamp" }
   );
 
-  const ySpread = interpolate(
+  // Vertical stagger: each line is slightly offset so the camera weaves past them
+  const baseYOffset = LINE_Y_OFFSETS[index % LINE_Y_OFFSETS.length];
+
+  // Drift the line toward center as it approaches, then let scale carry it away
+  const yDrift = interpolate(
     lineRelativePos,
-    [0, 1, 2, 3, 4, 5],
-    [0, 88, 148, 190, 220, 242],
+    [0, 0.5, 1.5, 3.5],
+    [baseYOffset * 0.3, baseYOffset * 0.6, baseYOffset, baseYOffset],
     { extrapolateLeft: "clamp", extrapolateRight: "clamp" }
   );
 
-  const isActive = lineRelativePos > -0.3 && lineRelativePos < 0.3;
-  const isPassed = lineRelativePos < -0.1;
-
-  // Last line gets a special blue accent color when active
-  const activeColor = isLastLine ? "#4a7fe0" : "rgb(30, 45, 94)";
+  const isActive = lineRelativePos > -0.15 && lineRelativePos < 0.25;
+  const isPassed = lineRelativePos < -0.05;
+  const activeColor = isLastLine ? "#4a7fe0" : "rgb(20, 35, 80)";
 
   const colorValue = interpolate(
     lineRelativePos,
-    [-0.3, 0, 0.5, 1.5],
-    [185, 20, 75, 145],
+    [-0.15, 0, 0.3, 1.0, 2.0],
+    [30, 20, 60, 110, 155],
     { extrapolateLeft: "clamp", extrapolateRight: "clamp" }
   );
 
   const color = isPassed
-    ? `rgba(30, 45, 94, 0.1)`
+    ? `rgba(20, 35, 80, 0.06)`
     : isActive
     ? activeColor
-    : `rgb(${colorValue}, ${colorValue + 18}, ${Math.min(colorValue + 55, 175)})`;
+    : `rgb(${colorValue}, ${colorValue + 15}, ${Math.min(colorValue + 50, 170)})`;
 
-  const fontSize = interpolate(
-    lineRelativePos,
-    [0, 0.5, 1, 2, 3],
-    [54, 42, 33, 25, 19],
-    { extrapolateLeft: "clamp", extrapolateRight: "clamp" }
-  );
-
+  // Motion blur: strongest just as it blasts past camera
   const blur = interpolate(
-    Math.abs(lineRelativePos),
-    [0, 0.15, 0.55, 1.5, 3],
-    [0, 0, 1.5, 4, 7],
+    lineRelativePos,
+    [-0.2, -0.08, 0, 0.1, 0.4, 1.5],
+    [8,    3,     0, 0,   1,   4],
     { extrapolateLeft: "clamp", extrapolateRight: "clamp" }
   );
 
@@ -151,19 +154,19 @@ function Line({
         position: "absolute",
         left: "50%",
         top: "50%",
-        transform: `translateX(-50%) translateY(calc(-50% + ${ySpread}px)) scale(${scale})`,
+        transform: `translateX(-50%) translateY(calc(-50% + ${yDrift}px)) scale(${scale})`,
         opacity,
         color,
-        fontSize,
-        fontWeight: isActive ? 700 : 500,
+        fontSize: 68,
+        fontWeight: 700,
         fontFamily:
           '"Avenir Next", "Avenir", "Nunito Sans", system-ui, -apple-system, sans-serif',
-        letterSpacing: isActive ? "-0.02em" : "0.01em",
+        letterSpacing: "-0.02em",
         filter: blur > 0 ? `blur(${blur}px)` : "none",
         whiteSpace: "nowrap",
         willChange: "transform, opacity",
         textAlign: "center",
-        lineHeight: 1.1,
+        lineHeight: 1.0,
       }}
     >
       {text}
@@ -176,12 +179,13 @@ function AccentLine({ frame }: { frame: number }) {
   const currentLineIndex = Math.floor(cameraProgress);
   const lineProgress = cameraProgress - currentLineIndex;
 
-  const opacity = interpolate(lineProgress, [0, 0.08, 0.82, 1], [0, 1, 1, 0], {
+  // Show accent line only in the mid-range before text blows up
+  const opacity = interpolate(lineProgress, [0.1, 0.25, 0.65, 0.82], [0, 1, 1, 0], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
   });
 
-  const width = interpolate(lineProgress, [0, 0.25, 0.75, 1], [0, 56, 56, 0], {
+  const width = interpolate(lineProgress, [0.1, 0.35, 0.65, 0.82], [0, 80, 80, 0], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
   });
@@ -192,9 +196,9 @@ function AccentLine({ frame }: { frame: number }) {
         position: "absolute",
         left: "50%",
         top: "50%",
-        transform: "translateX(-50%) translateY(calc(-50% + 40px))",
+        transform: "translateX(-50%) translateY(calc(-50% + 56px))",
         width,
-        height: 3,
+        height: 4,
         borderRadius: 2,
         background: "linear-gradient(90deg, #4a7fe0, #6fa0ff)",
         opacity,
