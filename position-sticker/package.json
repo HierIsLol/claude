@@ -1,0 +1,22 @@
+{
+  "name": "position-sticker",
+  "version": "1.0.0",
+  "description": "Remotion video explaining the position sticker feature",
+  "main": "src/index.ts",
+  "scripts": {
+    "start": "remotion studio",
+    "render": "remotion render PositionSticker out/position-sticker.mp4",
+    "build": "remotion render PositionSticker out/position-sticker.mp4"
+  },
+  "dependencies": {
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "remotion": "^4.0.0",
+    "@remotion/cli": "^4.0.0",
+    "@remotion/renderer": "^4.0.0"
+  },
+  "devDependencies": {
+    "@types/react": "^18.2.0",
+    "typescript": "^5.0.0"
+  }
+}
