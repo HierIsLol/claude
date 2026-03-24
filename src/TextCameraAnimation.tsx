@@ -85,7 +85,7 @@ function Blob({
         background: color,
         transform: `translate(-50%, -50%) scale(${scale})`,
         opacity,
-        filter: "blur(60px)",
+        filter: "blur(44px)",
         willChange: "transform, opacity",
       }}
     />
@@ -218,8 +218,17 @@ function Line({
       ? `0 0 ${22 * glowT}px ${glowCol}, 0 0 ${55 * glowT}px ${glowCol}`
       : "none";
 
-  // Last line in typewriter phase: show typewriter component instead of plain text
-  const showTypewriter = isLast && frozenFrame > 0;
+  // Last line: completely invisible during normal approach.
+  // Only appears via typewriter once the camera has frozen.
+  if (isLast && frozenFrame < 1) return null;
+
+  const showTypewriter = isLast;
+
+  // Typewriter: smooth fade-in over first 10 frames so it doesn't pop
+  const finalOpacity = showTypewriter
+    ? interpolate(frozenFrame, [0, 10], [0, 1], clamp)
+    : opacity;
+
   const content = showTypewriter ? (
     <TypewriterText frozenFrame={frozenFrame} />
   ) : (
@@ -233,7 +242,7 @@ function Line({
         left: "50%",
         top: "50%",
         transform: `translateX(-50%) translateY(calc(-50% + ${yDrift}px)) scale(${scale})`,
-        opacity,
+        opacity: finalOpacity,
         color: showTypewriter ? "#0f172a" : color,
         fontSize: 64,
         fontWeight: 700,
@@ -241,7 +250,7 @@ function Line({
           '"Avenir Next", "Avenir", "Nunito Sans", system-ui, -apple-system, sans-serif',
         letterSpacing: "-0.025em",
         textShadow: showTypewriter ? "none" : textShadow,
-        filter: blur > 0.1 ? `blur(${blur}px)` : "none",
+        filter: !showTypewriter && blur > 0.1 ? `blur(${blur}px)` : "none",
         whiteSpace: "nowrap",
         willChange: "transform, opacity",
         textAlign: "center",
@@ -317,10 +326,10 @@ export function TextCameraAnimation() {
       }}
     >
       {/* Background nebulae */}
-      <Blob frame={frame} cam={cam} baseX={-12} baseY={8}   size={820} color="rgba(59,130,246,0.14)"  zDepth={0.78} />
-      <Blob frame={frame} cam={cam} baseX={112} baseY={90}  size={640} color="rgba(249,115,22,0.16)"   zDepth={0.58} />
-      <Blob frame={frame} cam={cam} baseX={98}  baseY={15}  size={340} color="rgba(99,160,255,0.12)"   zDepth={0.32} />
-      <Blob frame={frame} cam={cam} baseX={4}   baseY={88}  size={280} color="rgba(251,146,60,0.13)"   zDepth={0.28} />
+      <Blob frame={frame} cam={cam} baseX={-12} baseY={8}   size={820} color="rgba(59,130,246,0.26)"  zDepth={0.78} />
+      <Blob frame={frame} cam={cam} baseX={112} baseY={90}  size={640} color="rgba(249,115,22,0.28)"   zDepth={0.58} />
+      <Blob frame={frame} cam={cam} baseX={98}  baseY={15}  size={340} color="rgba(99,160,255,0.22)"   zDepth={0.32} />
+      <Blob frame={frame} cam={cam} baseX={4}   baseY={88}  size={280} color="rgba(251,146,60,0.22)"   zDepth={0.28} />
 
       {/* Text tunnel */}
       <div style={{ position: "absolute", inset: 0 }}>
