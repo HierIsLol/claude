@@ -13,7 +13,7 @@ import {
 const C = {
   navy:    '#12213f',
   blue:    '#4a6fa5',
-  red:     '#c97868',   // muted terracotta — minder fel rood
+  red:     '#e8412a',   // levendig rood
   bg:      '#edf1f8',
   card:    '#ffffff',
   surface: '#f4f7fc',
