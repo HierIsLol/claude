@@ -14,16 +14,40 @@ const LINES = [
   "Of lekker AdPal alles laten doen",
 ];
 
-const FRAMES_PER_LINE = 42;
-const TOTAL_FRAMES = LINES.length * FRAMES_PER_LINE;
+const FRAMES_PER_LINE = 48;
 
-// Stagger each line slightly off-center so camera "weaves" through them
-const LINE_Y_OFFSETS = [0, 38, -28, 22, -36, 0];
+// Camera starts 2.2 "lines" before the first line — everyone begins as a tiny dot
+const CAM_OFFSET = 2.2;
 
-// ─── Blobs ──────────────────────────────────────────────────────────────────
+const LAST_IDX = LINES.length - 1;
+
+// Camera freezes when last line reaches rel = 0.50 (comfortable reading scale ~1.15)
+const FREEZE_CAM = LAST_IDX - 0.50;
+const FREEZE_AT_FRAME = (FREEZE_CAM + CAM_OFFSET) * FRAMES_PER_LINE;
+
+const TYPEWRITER_DURATION = 56; // frames to type the last line
+const HOLD_FRAMES = 45;          // frames to hold after typing finishes
+
+export const TOTAL_FRAMES = Math.ceil(FREEZE_AT_FRAME) + TYPEWRITER_DURATION + HOLD_FRAMES;
+
+// Last line: "Of lekker AdPal alles laten doen"
+const LAST_TEXT = LINES[LAST_IDX];
+const ADPAL_START = LAST_TEXT.indexOf("AdPal");
+const ADPAL_END = ADPAL_START + "AdPal".length;
+
+const clamp = {
+  extrapolateLeft: "clamp" as const,
+  extrapolateRight: "clamp" as const,
+};
+
+// Y-offsets so lines weave through the frame
+const Y_OFFSETS = [0, 36, -26, 20, -34, 0];
+
+// ─── Blob ────────────────────────────────────────────────────────────────────
 
 function Blob({
   frame,
+  cam,
   baseX,
   baseY,
   size,
@@ -31,29 +55,22 @@ function Blob({
   zDepth,
 }: {
   frame: number;
+  cam: number;
   baseX: number;
   baseY: number;
   size: number;
   color: string;
-  zDepth: number; // 1 = far/slow, 0 = close/fast
+  zDepth: number;
 }) {
-  const cam = frame / FRAMES_PER_LINE;
-  const factor = 1 - zDepth;
-  const drive = cam * factor;
-
-  const scale = interpolate(drive, [0, LINES.length], [1, 1 + factor * 3], {
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
-  });
-
+  const drive = cam * (1 - zDepth);
+  const scale = interpolate(drive, [0, LINES.length], [1, 1 + (1 - zDepth) * 3], clamp);
   const driftX = (baseX - 50) * (scale - 1) * 0.55;
   const driftY = (baseY - 50) * (scale - 1) * 0.55;
-
   const opacity = interpolate(
-    drive,
-    [0, 0.4, LINES.length - 0.4, LINES.length],
+    frame,
+    [0, 18, TOTAL_FRAMES - 18, TOTAL_FRAMES],
     [0, 1, 1, 0],
-    { extrapolateLeft: "clamp", extrapolateRight: "clamp" }
+    clamp
   );
 
   return (
@@ -68,95 +85,146 @@ function Blob({
         background: color,
         transform: `translate(-50%, -50%) scale(${scale})`,
         opacity,
-        willChange: "transform, opacity",
         filter: "blur(60px)",
+        willChange: "transform, opacity",
       }}
     />
   );
 }
 
-// ─── Text line ───────────────────────────────────────────────────────────────
+// ─── Typewriter ───────────────────────────────────────────────────────────────
+
+function TypewriterText({ frozenFrame }: { frozenFrame: number }) {
+  const totalChars = LAST_TEXT.length;
+  // Slight pause at start, then accelerates into rhythm
+  const progress = interpolate(frozenFrame, [0, 6, TYPEWRITER_DURATION], [0, 0, 1], clamp);
+  const visibleChars = Math.min(Math.floor(progress * totalChars), totalChars);
+
+  // Cursor blinks at ~2 Hz; hide a beat after typing finishes
+  const showCursor =
+    frozenFrame < TYPEWRITER_DURATION + 18 &&
+    Math.floor((frozenFrame * 2) / 30) % 2 === 0;
+
+  const before = LAST_TEXT.slice(0, Math.min(visibleChars, ADPAL_START));
+  const adpal = visibleChars > ADPAL_START
+    ? LAST_TEXT.slice(ADPAL_START, Math.min(visibleChars, ADPAL_END))
+    : "";
+  const after = visibleChars > ADPAL_END
+    ? LAST_TEXT.slice(ADPAL_END, visibleChars)
+    : "";
+
+  // AdPal glow pulses once typing is done
+  const typingDone = visibleChars >= totalChars;
+  const pulse = typingDone
+    ? interpolate(
+        frozenFrame - TYPEWRITER_DURATION,
+        [0, 12, 26, 38],
+        [0, 1, 0.6, 1],
+        clamp
+      )
+    : adpal.length > 0
+    ? 0.7
+    : 0;
+
+  const adpalGlow =
+    pulse > 0
+      ? `0 0 ${28 * pulse}px rgba(100,170,255,${0.7 * pulse}), 0 0 ${70 * pulse}px rgba(60,130,255,${0.35 * pulse})`
+      : "none";
+
+  return (
+    <span>
+      <span style={{ color: "#f0f4ff" }}>{before}</span>
+      {adpal && (
+        <span style={{ color: "#7eb8ff", textShadow: adpalGlow }}>{adpal}</span>
+      )}
+      <span style={{ color: "#f0f4ff" }}>{after}</span>
+      {showCursor && (
+        <span
+          style={{
+            color: "#7eb8ff",
+            opacity: 0.85,
+            marginLeft: 2,
+            fontWeight: 300,
+          }}
+        >
+          |
+        </span>
+      )}
+    </span>
+  );
+}
+
+// ─── Line ─────────────────────────────────────────────────────────────────────
 
 function Line({
   text,
   index,
-  frame,
-  isLastLine,
+  cam,
+  frozenFrame,
+  isLast,
 }: {
   text: string;
   index: number;
-  frame: number;
-  isLastLine: boolean;
+  cam: number;
+  frozenFrame: number;
+  isLast: boolean;
 }) {
-  const cam = frame / FRAMES_PER_LINE;
-  const rel = index - cam; // positive = ahead, negative = behind
+  const rel = index - cam; // positive = ahead, negative = behind camera
 
-  // Opacity: dim in tunnel → fully lit at readable window → quick fade on pass
+  // Opacity: invisible far away → fully lit → fade after passing
   const opacity = interpolate(
     rel,
-    [-0.16, -0.04, 0.0, 0.28, 0.52, 0.95, 2.0, 4.0],
-    [0,     0.04,  1,   1,    1,    0.55, 0.15, 0],
-    { extrapolateLeft: "clamp", extrapolateRight: "clamp" }
+    [-0.18, -0.04, 0.0, 0.28, 0.54, 1.0, 2.2, 4.2],
+    [0,     0.04,  1,   1,    1,    0.5, 0.14, 0],
+    clamp
   );
 
-  // Scale: tiny dot → snaps into readable size → explodes past camera
+  // Scale: tiny dot far away → readable → explodes past camera
   const scale = interpolate(
     rel,
     [-0.18, 0,   0.14, 0.34, 0.54, 0.95, 1.6,  2.6,  4.2],
-    [16,    7.5, 3.4,  1.55, 1.08, 0.72, 0.46, 0.30, 0.16],
-    { extrapolateLeft: "clamp", extrapolateRight: "clamp" }
+    [16,    7.5, 3.4,  1.55, 1.12, 0.72, 0.46, 0.30, 0.16],
+    clamp
   );
 
-  // Vertical drift: each line sits at its stagger offset
-  const baseY = LINE_Y_OFFSETS[index % LINE_Y_OFFSETS.length];
-  const yDrift = interpolate(
-    rel,
-    [0, 0.5, 1.5, 4],
-    [baseY * 0.25, baseY * 0.55, baseY, baseY],
-    { extrapolateLeft: "clamp", extrapolateRight: "clamp" }
-  );
+  // Vertical stagger drift
+  const baseY = Y_OFFSETS[index % Y_OFFSETS.length];
+  const yDrift = interpolate(rel, [0, 0.5, 1.5, 4], [baseY * 0.25, baseY * 0.55, baseY, baseY], clamp);
 
-  // Color: muted far → bright white in readable zone → electric on pass
-  const isReadable = rel > 0.25 && rel < 0.65;
-  const isActive   = rel > -0.14 && rel < 0.26;
-  const isPassed   = rel < -0.04;
+  // Motion blur as line blasts past
+  const blur = interpolate(rel, [-0.18, -0.06, 0, 0.15, 0.6], [8, 3.5, 0, 0, 1.5], clamp);
+
+  // Text color: dim/blue-grey far → bright white in window → gone on pass
+  const isActive = rel > -0.14 && rel < 0.26;
+  const isPassed = rel < -0.05;
 
   let color: string;
   if (isPassed) {
-    color = "rgba(255,255,255,0.03)";
+    color = "rgba(255,255,255,0.02)";
   } else if (isActive) {
-    color = isLastLine ? "#7eb8ff" : "#ffffff";
-  } else if (isReadable) {
-    color = isLastLine ? "#a8d0ff" : "#f0f4ff";
+    color = isLast ? "#7eb8ff" : "#ffffff";
   } else {
-    const v = interpolate(rel, [0.65, 1.5, 3.5], [200, 130, 70], {
-      extrapolateLeft: "clamp",
-      extrapolateRight: "clamp",
-    });
-    color = `rgba(${v}, ${v + 10}, ${Math.min(v + 40, 220)}, ${interpolate(rel, [0.65, 2, 4], [0.85, 0.5, 0.1], { extrapolateLeft: "clamp", extrapolateRight: "clamp" })})`;
+    const dist = interpolate(rel, [0.26, 1.2, 2.5, 4.2], [1, 0.7, 0.45, 0.2], clamp);
+    const v = Math.round(100 + dist * 130);
+    color = `rgba(${v}, ${v + 8}, ${Math.min(v + 36, 230)}, ${dist * 0.9})`;
   }
 
-  // Glow at readable peak
-  const glowIntensity = interpolate(
-    rel,
-    [0.2, 0.42, 0.65],
-    [0, 1, 0],
-    { extrapolateLeft: "clamp", extrapolateRight: "clamp" }
-  );
-  const glowColor = isLastLine
-    ? `rgba(100, 170, 255, ${glowIntensity * 0.6})`
-    : `rgba(200, 220, 255, ${glowIntensity * 0.45})`;
+  // Glow at readable peak — blue for last line
+  const glowT = interpolate(rel, [0.22, 0.44, 0.66], [0, 1, 0], clamp);
+  const glowCol = isLast
+    ? `rgba(100,170,255,${glowT * 0.55})`
+    : `rgba(200,220,255,${glowT * 0.4})`;
   const textShadow =
-    glowIntensity > 0.05
-      ? `0 0 ${30 * glowIntensity}px ${glowColor}, 0 0 ${80 * glowIntensity}px ${glowColor}`
+    glowT > 0.06
+      ? `0 0 ${28 * glowT}px ${glowCol}, 0 0 ${72 * glowT}px ${glowCol}`
       : "none";
 
-  // Motion blur right as line blasts past
-  const blur = interpolate(
-    rel,
-    [-0.18, -0.06, 0, 0.1, 0.5, 1.5],
-    [10,    4,     0, 0,   0.5, 3.5],
-    { extrapolateLeft: "clamp", extrapolateRight: "clamp" }
+  // Last line in typewriter phase: show typewriter component instead of plain text
+  const showTypewriter = isLast && frozenFrame > 0;
+  const content = showTypewriter ? (
+    <TypewriterText frozenFrame={frozenFrame} />
+  ) : (
+    text
   );
 
   return (
@@ -167,30 +235,29 @@ function Line({
         top: "50%",
         transform: `translateX(-50%) translateY(calc(-50% + ${yDrift}px)) scale(${scale})`,
         opacity,
-        color,
+        color: showTypewriter ? "#f0f4ff" : color,
         fontSize: 64,
         fontWeight: 700,
         fontFamily:
           '"Avenir Next", "Avenir", "Nunito Sans", system-ui, -apple-system, sans-serif',
         letterSpacing: "-0.025em",
-        textShadow,
-        filter: blur > 0 ? `blur(${blur}px)` : "none",
+        textShadow: showTypewriter ? "none" : textShadow,
+        filter: blur > 0.1 ? `blur(${blur}px)` : "none",
         whiteSpace: "nowrap",
         willChange: "transform, opacity",
         textAlign: "center",
         lineHeight: 1,
       }}
     >
-      {text}
+      {content}
     </div>
   );
 }
 
 // ─── Progress dots ───────────────────────────────────────────────────────────
 
-function ProgressDots({ frame }: { frame: number }) {
-  const cam = frame / FRAMES_PER_LINE;
-  const current = Math.min(Math.floor(cam), LINES.length - 1);
+function ProgressDots({ cam }: { cam: number }) {
+  const current = Math.min(Math.floor(cam + 0.56), LINES.length - 1);
 
   return (
     <div
@@ -215,11 +282,12 @@ function ProgressDots({ frame }: { frame: number }) {
               height: 8,
               borderRadius: 4,
               background: isActive
-                ? "rgba(120, 175, 255, 0.9)"
+                ? "rgba(120,175,255,0.9)"
                 : isPast
                 ? "rgba(255,255,255,0.25)"
                 : "rgba(255,255,255,0.12)",
               boxShadow: isActive ? "0 0 10px rgba(100,160,255,0.6)" : "none",
+              transition: "none",
             }}
           />
         );
@@ -228,26 +296,19 @@ function ProgressDots({ frame }: { frame: number }) {
   );
 }
 
-// ─── Vignette ────────────────────────────────────────────────────────────────
-
-function Vignette() {
-  return (
-    <div
-      style={{
-        position: "absolute",
-        inset: 0,
-        background:
-          "radial-gradient(ellipse 85% 85% at 50% 50%, transparent 40%, rgba(4,6,16,0.75) 100%)",
-        pointerEvents: "none",
-      }}
-    />
-  );
-}
-
-// ─── Root ────────────────────────────────────────────────────────────────────
+// ─── Root ─────────────────────────────────────────────────────────────────────
 
 export function TextCameraAnimation() {
   const frame = useCurrentFrame();
+
+  // Raw camera position (starts negative so first line comes from far away)
+  const rawCam = frame / FRAMES_PER_LINE - CAM_OFFSET;
+
+  // Clamp camera: freeze once last line hits its readable spot
+  const cam = Math.min(rawCam, FREEZE_CAM);
+
+  // How many frames have elapsed since the camera froze (drives typewriter)
+  const frozenFrame = Math.max(0, frame - FREEZE_AT_FRAME);
 
   return (
     <AbsoluteFill
@@ -256,14 +317,11 @@ export function TextCameraAnimation() {
         overflow: "hidden",
       }}
     >
-      {/* Large blue nebula — top-left, far */}
-      <Blob frame={frame} baseX={-12} baseY={8}   size={820} color="rgba(60,110,230,0.18)"  zDepth={0.78} />
-      {/* Warm amber — bottom-right, mid */}
-      <Blob frame={frame} baseX={112} baseY={90}  size={640} color="rgba(220,130,60,0.18)"  zDepth={0.58} />
-      {/* Small blue accent — right, closer */}
-      <Blob frame={frame} baseX={98}  baseY={15}  size={340} color="rgba(80,150,255,0.14)"  zDepth={0.32} />
-      {/* Small amber accent — left, closer */}
-      <Blob frame={frame} baseX={4}   baseY={88}  size={280} color="rgba(240,160,90,0.14)"  zDepth={0.28} />
+      {/* Background nebulae */}
+      <Blob frame={frame} cam={cam} baseX={-12} baseY={8}   size={820} color="rgba(60,110,230,0.18)"  zDepth={0.78} />
+      <Blob frame={frame} cam={cam} baseX={112} baseY={90}  size={640} color="rgba(220,130,60,0.18)"  zDepth={0.58} />
+      <Blob frame={frame} cam={cam} baseX={98}  baseY={15}  size={340} color="rgba(80,150,255,0.14)"  zDepth={0.32} />
+      <Blob frame={frame} cam={cam} baseX={4}   baseY={88}  size={280} color="rgba(240,160,90,0.14)"  zDepth={0.28} />
 
       {/* Text tunnel */}
       <div style={{ position: "absolute", inset: 0 }}>
@@ -272,16 +330,25 @@ export function TextCameraAnimation() {
             key={i}
             text={line}
             index={i}
-            frame={frame}
-            isLastLine={i === LINES.length - 1}
+            cam={cam}
+            frozenFrame={i === LAST_IDX ? frozenFrame : 0}
+            isLast={i === LAST_IDX}
           />
         ))}
       </div>
 
       {/* Depth vignette */}
-      <Vignette />
+      <div
+        style={{
+          position: "absolute",
+          inset: 0,
+          background:
+            "radial-gradient(ellipse 85% 85% at 50% 50%, transparent 40%, rgba(4,6,16,0.75) 100%)",
+          pointerEvents: "none",
+        }}
+      />
 
-      <ProgressDots frame={frame} />
+      <ProgressDots cam={cam} />
     </AbsoluteFill>
   );
 }
