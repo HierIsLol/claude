@@ -6,7 +6,7 @@ export const Root = () => {
     <Composition
       id="PositionSticker"
       component={PositionStickerVideo}
-      durationInFrames={420}
+      durationInFrames={1440}
       fps={30}
       width={1280}
       height={720}
