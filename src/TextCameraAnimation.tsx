@@ -128,21 +128,21 @@ function TypewriterText({ frozenFrame }: { frozenFrame: number }) {
 
   const adpalGlow =
     pulse > 0
-      ? `0 0 ${28 * pulse}px rgba(100,170,255,${0.7 * pulse}), 0 0 ${70 * pulse}px rgba(60,130,255,${0.35 * pulse})`
+      ? `0 0 ${20 * pulse}px rgba(37,99,235,${0.5 * pulse}), 0 0 ${50 * pulse}px rgba(59,130,246,${0.25 * pulse})`
       : "none";
 
   return (
     <span>
-      <span style={{ color: "#f0f4ff" }}>{before}</span>
+      <span style={{ color: "#0f172a" }}>{before}</span>
       {adpal && (
-        <span style={{ color: "#7eb8ff", textShadow: adpalGlow }}>{adpal}</span>
+        <span style={{ color: "#2563eb", textShadow: adpalGlow }}>{adpal}</span>
       )}
-      <span style={{ color: "#f0f4ff" }}>{after}</span>
+      <span style={{ color: "#0f172a" }}>{after}</span>
       {showCursor && (
         <span
           style={{
-            color: "#7eb8ff",
-            opacity: 0.85,
+            color: "#2563eb",
+            opacity: 0.8,
             marginLeft: 2,
             fontWeight: 300,
           }}
@@ -194,29 +194,28 @@ function Line({
   // Motion blur as line blasts past
   const blur = interpolate(rel, [-0.18, -0.06, 0, 0.15, 0.6], [8, 3.5, 0, 0, 1.5], clamp);
 
-  // Text color: dim/blue-grey far → bright white in window → gone on pass
+  // Text color: nearly invisible far → dark navy at reading distance → fades on pass
   const isActive = rel > -0.14 && rel < 0.26;
   const isPassed = rel < -0.05;
 
   let color: string;
   if (isPassed) {
-    color = "rgba(255,255,255,0.02)";
+    color = "rgba(15,25,80,0.04)";
   } else if (isActive) {
-    color = isLast ? "#7eb8ff" : "#ffffff";
+    color = isLast ? "#2563eb" : "#0f172a";
   } else {
-    const dist = interpolate(rel, [0.26, 1.2, 2.5, 4.2], [1, 0.7, 0.45, 0.2], clamp);
-    const v = Math.round(100 + dist * 130);
-    color = `rgba(${v}, ${v + 8}, ${Math.min(v + 36, 230)}, ${dist * 0.9})`;
+    const dist = interpolate(rel, [0.26, 1.0, 2.2, 4.2], [1, 0.55, 0.28, 0.08], clamp);
+    color = `rgba(30, 50, 140, ${dist * 0.85})`;
   }
 
-  // Glow at readable peak — blue for last line
+  // Subtle glow at readable peak — blue tint
   const glowT = interpolate(rel, [0.22, 0.44, 0.66], [0, 1, 0], clamp);
   const glowCol = isLast
-    ? `rgba(100,170,255,${glowT * 0.55})`
-    : `rgba(200,220,255,${glowT * 0.4})`;
+    ? `rgba(37,99,235,${glowT * 0.25})`
+    : `rgba(59,100,220,${glowT * 0.18})`;
   const textShadow =
     glowT > 0.06
-      ? `0 0 ${28 * glowT}px ${glowCol}, 0 0 ${72 * glowT}px ${glowCol}`
+      ? `0 0 ${22 * glowT}px ${glowCol}, 0 0 ${55 * glowT}px ${glowCol}`
       : "none";
 
   // Last line in typewriter phase: show typewriter component instead of plain text
@@ -235,7 +234,7 @@ function Line({
         top: "50%",
         transform: `translateX(-50%) translateY(calc(-50% + ${yDrift}px)) scale(${scale})`,
         opacity,
-        color: showTypewriter ? "#f0f4ff" : color,
+        color: showTypewriter ? "#0f172a" : color,
         fontSize: 64,
         fontWeight: 700,
         fontFamily:
@@ -282,11 +281,11 @@ function ProgressDots({ cam }: { cam: number }) {
               height: 8,
               borderRadius: 4,
               background: isActive
-                ? "rgba(120,175,255,0.9)"
+                ? "#2563eb"
                 : isPast
-                ? "rgba(255,255,255,0.25)"
-                : "rgba(255,255,255,0.12)",
-              boxShadow: isActive ? "0 0 10px rgba(100,160,255,0.6)" : "none",
+                ? "rgba(37,99,235,0.3)"
+                : "rgba(15,23,80,0.15)",
+              boxShadow: isActive ? "0 0 10px rgba(37,99,235,0.45)" : "none",
               transition: "none",
             }}
           />
@@ -313,15 +312,15 @@ export function TextCameraAnimation() {
   return (
     <AbsoluteFill
       style={{
-        background: "linear-gradient(145deg, #07091a 0%, #0c1124 55%, #080d1c 100%)",
+        background: "linear-gradient(145deg, #fafbff 0%, #f4f7ff 55%, #fdf9f5 100%)",
         overflow: "hidden",
       }}
     >
       {/* Background nebulae */}
-      <Blob frame={frame} cam={cam} baseX={-12} baseY={8}   size={820} color="rgba(60,110,230,0.18)"  zDepth={0.78} />
-      <Blob frame={frame} cam={cam} baseX={112} baseY={90}  size={640} color="rgba(220,130,60,0.18)"  zDepth={0.58} />
-      <Blob frame={frame} cam={cam} baseX={98}  baseY={15}  size={340} color="rgba(80,150,255,0.14)"  zDepth={0.32} />
-      <Blob frame={frame} cam={cam} baseX={4}   baseY={88}  size={280} color="rgba(240,160,90,0.14)"  zDepth={0.28} />
+      <Blob frame={frame} cam={cam} baseX={-12} baseY={8}   size={820} color="rgba(59,130,246,0.14)"  zDepth={0.78} />
+      <Blob frame={frame} cam={cam} baseX={112} baseY={90}  size={640} color="rgba(249,115,22,0.16)"   zDepth={0.58} />
+      <Blob frame={frame} cam={cam} baseX={98}  baseY={15}  size={340} color="rgba(99,160,255,0.12)"   zDepth={0.32} />
+      <Blob frame={frame} cam={cam} baseX={4}   baseY={88}  size={280} color="rgba(251,146,60,0.13)"   zDepth={0.28} />
 
       {/* Text tunnel */}
       <div style={{ position: "absolute", inset: 0 }}>
@@ -343,7 +342,7 @@ export function TextCameraAnimation() {
           position: "absolute",
           inset: 0,
           background:
-            "radial-gradient(ellipse 85% 85% at 50% 50%, transparent 40%, rgba(4,6,16,0.75) 100%)",
+            "radial-gradient(ellipse 85% 85% at 50% 50%, transparent 38%, rgba(235,240,255,0.72) 100%)",
           pointerEvents: "none",
         }}
       />
