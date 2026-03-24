@@ -180,7 +180,7 @@ export const AdpalDashboard: React.FC = () => {
 
   // ── 3-D zoom — sterke zijkant-rotatie ────────────────────────────────────
   const rotX  = zoomProg * 18;    // meer naar voren/achteren kantelen
-  const rotY  = zoomProg * -32;   // sterk van de zijkant
+  const rotY  = zoomProg * 32;    // andere kant op
   const scale = 1 + zoomProg * 1.9;
 
   // Pivot verschuift naar chart
