@@ -4,107 +4,144 @@ import {
   useCurrentFrame,
   useVideoConfig,
   interpolate,
-  Easing,
-  spring,
 } from "remotion";
 
 const LINES = [
-  "TACoS gebaseerd sturen",
-  "Of gewoon lekker, alles doen",
-  "Overzicht van al je verkoopkanalen",
-  "Meer zichtbaarheid voor dezelfde producten",
-  "Hogere organische posities",
   "Volledig automatische campagnes",
+  "Hogere organische posities",
+  "Meer zichtbaarheid voor dezelfde producten",
+  "Overzicht van al je verkoopkanalen",
+  "TACoS gebaseerd sturen",
+  "Of lekker AdPal alles laten doen",
 ];
 
-// Each line occupies this many frames of "camera travel"
-const FRAMES_PER_LINE = 60;
-const HOLD_FRAMES = 20; // frames to hold on each line before moving
+// Faster: 42 frames per line
+const FRAMES_PER_LINE = 42;
 const TOTAL_FRAMES = LINES.length * FRAMES_PER_LINE;
 
-// How many lines to show at once in perspective view
-const PERSPECTIVE_DEPTH = 1200;
+// Animated blobs that scale/move with camera parallax
+function Blob({
+  frame,
+  baseX,
+  baseY,
+  size,
+  color,
+  zDepth, // 0 = same speed as camera, 1 = slow (far), -1 = fast (close)
+}: {
+  frame: number;
+  baseX: number; // % from left
+  baseY: number; // % from top
+  size: number;
+  color: string;
+  zDepth: number;
+}) {
+  const cameraProgress = frame / FRAMES_PER_LINE;
+
+  // Parallax: blobs closer to camera move faster and scale up more
+  const parallaxFactor = 1 - zDepth; // zDepth 0.8 = far/slow, 0.2 = close/fast
+  const scaleDrive = cameraProgress * parallaxFactor;
+
+  const scale = interpolate(scaleDrive, [0, LINES.length], [1, 1 + parallaxFactor * 2.5], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+  });
+
+  // Drift slightly outward from center as camera approaches
+  const cx = 50;
+  const cy = 50;
+  const driftX = (baseX - cx) * (scale - 1) * 0.6;
+  const driftY = (baseY - cy) * (scale - 1) * 0.6;
+
+  const opacity = interpolate(
+    scaleDrive,
+    [0, 0.3, LINES.length - 0.5, LINES.length],
+    [0, 1, 1, 0],
+    { extrapolateLeft: "clamp", extrapolateRight: "clamp" }
+  );
+
+  return (
+    <div
+      style={{
+        position: "absolute",
+        left: `${baseX + driftX}%`,
+        top: `${baseY + driftY}%`,
+        width: size,
+        height: size,
+        borderRadius: "50%",
+        background: color,
+        transform: `translate(-50%, -50%) scale(${scale})`,
+        opacity,
+        willChange: "transform, opacity",
+      }}
+    />
+  );
+}
 
 function Line({
   text,
   index,
   frame,
-  totalLines,
+  isLastLine,
 }: {
   text: string;
   index: number;
   frame: number;
-  totalLines: number;
+  isLastLine: boolean;
 }) {
-  const { fps } = useVideoConfig();
-
-  // Camera position in "line units" - how far we've traveled
   const cameraProgress = frame / FRAMES_PER_LINE;
-
-  // Relative position of this line to camera (negative = behind, 0 = at camera, positive = ahead)
   const lineRelativePos = index - cameraProgress;
 
-  // Z distance: lines ahead are positive, lines behind are negative
-  // Map lineRelativePos to Z space
-  const zPos = lineRelativePos * 280;
-
-  // Opacity: fade in when approaching, fade out when passed
   const opacity = interpolate(
     lineRelativePos,
-    [-0.4, -0.1, 0, 0.3, 1.5, 3],
-    [0, 0.15, 1, 0.9, 0.4, 0],
+    [-0.35, -0.05, 0, 0.25, 1.4, 3],
+    [0, 0.12, 1, 0.92, 0.35, 0],
     { extrapolateLeft: "clamp", extrapolateRight: "clamp" }
   );
 
-  // Scale based on Z (perspective simulation on top of CSS perspective)
   const scale = interpolate(
     lineRelativePos,
     [-0.5, 0, 0.5, 1, 2, 4],
-    [1.8, 1.05, 0.85, 0.7, 0.5, 0.3],
+    [2.1, 1.08, 0.82, 0.66, 0.46, 0.28],
     { extrapolateLeft: "clamp", extrapolateRight: "clamp" }
   );
 
-  // Vertical position: lines spread out vertically based on distance
-  // Lines far ahead appear near center, spread out as they approach
   const ySpread = interpolate(
     lineRelativePos,
     [0, 1, 2, 3, 4, 5],
-    [0, 80, 140, 180, 210, 230],
+    [0, 88, 148, 190, 220, 242],
     { extrapolateLeft: "clamp", extrapolateRight: "clamp" }
   );
 
-  // Active line (currently at camera) gets dark color, others lighter
   const isActive = lineRelativePos > -0.3 && lineRelativePos < 0.3;
   const isPassed = lineRelativePos < -0.1;
+
+  // Last line gets a special blue accent color when active
+  const activeColor = isLastLine ? "#4a7fe0" : "rgb(30, 45, 94)";
 
   const colorValue = interpolate(
     lineRelativePos,
     [-0.3, 0, 0.5, 1.5],
-    [180, 20, 80, 140],
+    [185, 20, 75, 145],
     { extrapolateLeft: "clamp", extrapolateRight: "clamp" }
   );
 
   const color = isPassed
-    ? `rgba(30, 45, 94, 0.12)`
+    ? `rgba(30, 45, 94, 0.1)`
     : isActive
-    ? `rgb(30, 45, 94)`
-    : `rgb(${colorValue}, ${colorValue + 20}, ${Math.min(colorValue + 60, 180)})`;
+    ? activeColor
+    : `rgb(${colorValue}, ${colorValue + 18}, ${Math.min(colorValue + 55, 175)})`;
 
-  // Font size varies with distance
   const fontSize = interpolate(
     lineRelativePos,
     [0, 0.5, 1, 2, 3],
-    [52, 42, 34, 26, 20],
+    [54, 42, 33, 25, 19],
     { extrapolateLeft: "clamp", extrapolateRight: "clamp" }
   );
 
-  const fontWeight = isActive ? 700 : 500;
-
-  // Blur for depth-of-field feel
   const blur = interpolate(
     Math.abs(lineRelativePos),
-    [0, 0.2, 0.6, 1.5, 3],
-    [0, 0, 1, 3, 6],
+    [0, 0.15, 0.55, 1.5, 3],
+    [0, 0, 1.5, 4, 7],
     { extrapolateLeft: "clamp", extrapolateRight: "clamp" }
   );
 
@@ -118,13 +155,12 @@ function Line({
         opacity,
         color,
         fontSize,
-        fontWeight,
+        fontWeight: isActive ? 700 : 500,
         fontFamily:
           '"Avenir Next", "Avenir", "Nunito Sans", system-ui, -apple-system, sans-serif',
-        letterSpacing: isActive ? "-0.02em" : "0em",
+        letterSpacing: isActive ? "-0.02em" : "0.01em",
         filter: blur > 0 ? `blur(${blur}px)` : "none",
         whiteSpace: "nowrap",
-        transition: "none",
         willChange: "transform, opacity",
         textAlign: "center",
         lineHeight: 1.1,
@@ -140,7 +176,12 @@ function AccentLine({ frame }: { frame: number }) {
   const currentLineIndex = Math.floor(cameraProgress);
   const lineProgress = cameraProgress - currentLineIndex;
 
-  const opacity = interpolate(lineProgress, [0, 0.1, 0.85, 1], [0, 1, 1, 0], {
+  const opacity = interpolate(lineProgress, [0, 0.08, 0.82, 1], [0, 1, 1, 0], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+  });
+
+  const width = interpolate(lineProgress, [0, 0.25, 0.75, 1], [0, 56, 56, 0], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
   });
@@ -151,15 +192,11 @@ function AccentLine({ frame }: { frame: number }) {
         position: "absolute",
         left: "50%",
         top: "50%",
-        transform: "translateX(-50%) translateY(calc(-50% + 36px))",
-        width: interpolate(lineProgress, [0, 0.3, 0.7, 1], [0, 60, 60, 0], {
-          extrapolateLeft: "clamp",
-          extrapolateRight: "clamp",
-        }),
+        transform: "translateX(-50%) translateY(calc(-50% + 40px))",
+        width,
         height: 3,
         borderRadius: 2,
-        background:
-          "linear-gradient(90deg, #4a7fe0, #6fa0ff)",
+        background: "linear-gradient(90deg, #4a7fe0, #6fa0ff)",
         opacity,
       }}
     />
@@ -168,16 +205,13 @@ function AccentLine({ frame }: { frame: number }) {
 
 function ProgressDots({ frame }: { frame: number }) {
   const cameraProgress = frame / FRAMES_PER_LINE;
-  const currentIndex = Math.min(
-    Math.floor(cameraProgress),
-    LINES.length - 1
-  );
+  const currentIndex = Math.min(Math.floor(cameraProgress), LINES.length - 1);
 
   return (
     <div
       style={{
         position: "absolute",
-        bottom: 60,
+        bottom: 56,
         left: "50%",
         transform: "translateX(-50%)",
         display: "flex",
@@ -186,15 +220,8 @@ function ProgressDots({ frame }: { frame: number }) {
       }}
     >
       {LINES.map((_, i) => {
-        const progress = interpolate(
-          cameraProgress - i,
-          [-0.5, 0, 0.5],
-          [0, 1, 0],
-          { extrapolateLeft: "clamp", extrapolateRight: "clamp" }
-        );
         const isActive = i === currentIndex;
         const isPast = i < currentIndex;
-
         return (
           <div
             key={i}
@@ -202,12 +229,7 @@ function ProgressDots({ frame }: { frame: number }) {
               width: isActive ? 24 : 8,
               height: 8,
               borderRadius: 4,
-              background: isActive
-                ? "#4a7fe0"
-                : isPast
-                ? "#c0cce8"
-                : "#e0e5f0",
-              transition: "none",
+              background: isActive ? "#4a7fe0" : isPast ? "#b8c8e6" : "#dde3f0",
             }}
           />
         );
@@ -216,113 +238,70 @@ function ProgressDots({ frame }: { frame: number }) {
   );
 }
 
-function Logo() {
-  return (
-    <div
-      style={{
-        position: "absolute",
-        top: 40,
-        left: "50%",
-        transform: "translateX(-50%)",
-        display: "flex",
-        alignItems: "center",
-        gap: 10,
-      }}
-    >
-      <div
-        style={{
-          width: 36,
-          height: 36,
-          borderRadius: "50%",
-          border: "2px solid #1e2d5e",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-        }}
-      >
-        <div
-          style={{
-            width: 16,
-            height: 16,
-            borderTop: "2px solid #1e2d5e",
-            borderRight: "2px solid #1e2d5e",
-            transform: "rotate(45deg) translate(-2px, 2px)",
-          }}
-        />
-      </div>
-    </div>
-  );
-}
-
 export function TextCameraAnimation() {
   const frame = useCurrentFrame();
-  const { width, height } = useVideoConfig();
-
-  // Smooth camera progress with easing between lines
-  const smoothFrame = interpolate(
-    frame,
-    [0, TOTAL_FRAMES],
-    [0, TOTAL_FRAMES],
-    { extrapolateLeft: "clamp", extrapolateRight: "clamp" }
-  );
 
   return (
     <AbsoluteFill
       style={{
-        background: "linear-gradient(160deg, #f9f8f5 0%, #f0eee8 100%)",
+        background: "linear-gradient(160deg, #f9f8f5 0%, #ede9e0 100%)",
         overflow: "hidden",
         fontFamily:
           '"Avenir Next", "Avenir", "Nunito Sans", system-ui, -apple-system, sans-serif',
       }}
     >
-      {/* Subtle background circles like Adpal */}
-      <div
-        style={{
-          position: "absolute",
-          top: -200,
-          left: -200,
-          width: 600,
-          height: 600,
-          borderRadius: "50%",
-          background: "rgba(200, 210, 235, 0.25)",
-        }}
+      {/* Blue blob — top-left, far away (slow parallax) */}
+      <Blob
+        frame={frame}
+        baseX={-8}
+        baseY={10}
+        size={680}
+        color="rgba(180, 200, 240, 0.28)"
+        zDepth={0.75}
       />
-      <div
-        style={{
-          position: "absolute",
-          bottom: -150,
-          right: -100,
-          width: 400,
-          height: 400,
-          borderRadius: "50%",
-          background: "rgba(220, 195, 185, 0.2)",
-        }}
+      {/* Orange/salmon blob — bottom-right, medium distance */}
+      <Blob
+        frame={frame}
+        baseX={108}
+        baseY={88}
+        size={520}
+        color="rgba(230, 180, 155, 0.28)"
+        zDepth={0.55}
+      />
+      {/* Smaller blue blob — mid-right, closer (faster parallax) */}
+      <Blob
+        frame={frame}
+        baseX={95}
+        baseY={18}
+        size={300}
+        color="rgba(160, 190, 235, 0.18)"
+        zDepth={0.3}
+      />
+      {/* Small orange blob — bottom-left, close */}
+      <Blob
+        frame={frame}
+        baseX={5}
+        baseY={90}
+        size={240}
+        color="rgba(235, 175, 145, 0.2)"
+        zDepth={0.25}
       />
 
-      {/* Text lines with camera perspective */}
-      <div
-        style={{
-          position: "absolute",
-          inset: 0,
-        }}
-      >
+      {/* Text lines */}
+      <div style={{ position: "absolute", inset: 0 }}>
         {LINES.map((line, i) => (
           <Line
             key={i}
             text={line}
             index={i}
-            frame={smoothFrame}
-            totalLines={LINES.length}
+            frame={frame}
+            isLastLine={i === LINES.length - 1}
           />
         ))}
-        <AccentLine frame={smoothFrame} />
+        <AccentLine frame={frame} />
       </div>
 
-      {/* Progress dots */}
-      <ProgressDots frame={smoothFrame} />
-
-      {/* Subtle logo mark */}
-      <Logo />
+      <ProgressDots frame={frame} />
     </AbsoluteFill>
   );
 }
