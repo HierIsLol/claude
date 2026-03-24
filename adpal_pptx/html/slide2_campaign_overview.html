@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=1440">
+<title>Adpal - Campagne Overzicht</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f5f6fa; color: #1a1a2e; }
+  .topbar { background: #fff; border-bottom: 1px solid #e8eaf0; padding: 0 32px; height: 60px; display: flex; align-items: center; justify-content: space-between; }
+  .logo { font-size: 22px; font-weight: 800; color: #1d3557; letter-spacing: -0.5px; }
+  .logo span { color: #e63946; }
+  .nav { display: flex; gap: 28px; }
+  .nav a { font-size: 14px; color: #555; text-decoration: none; font-weight: 500; }
+  .nav a.active { color: #1d3557; border-bottom: 2px solid #1d3557; padding-bottom: 2px; }
+  .user-area { display: flex; align-items: center; gap: 12px; }
+  .avatar { width: 34px; height: 34px; border-radius: 50%; background: #1d3557; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; }
+  .sidebar { position: fixed; left: 0; top: 60px; bottom: 0; width: 220px; background: #fff; border-right: 1px solid #e8eaf0; padding: 24px 0; }
+  .sidebar-item { display: flex; align-items: center; gap: 12px; padding: 10px 24px; font-size: 14px; color: #666; font-weight: 500; }
+  .sidebar-item.active { background: #f0f4ff; color: #1d3557; border-right: 3px solid #1d3557; }
+  .sidebar-item svg { width: 18px; height: 18px; opacity: 0.7; }
+  .main { margin-left: 220px; padding: 32px; }
+  .breadcrumb { font-size: 13px; color: #999; margin-bottom: 20px; }
+  .breadcrumb a { color: #1d3557; text-decoration: none; }
+
+  .campaign-header { background: #fff; border-radius: 12px; border: 1px solid #e8eaf0; padding: 24px 28px; margin-bottom: 20px; display: flex; align-items: center; justify-content: space-between; }
+  .campaign-info { display: flex; align-items: center; gap: 16px; }
+  .campaign-img { width: 56px; height: 56px; border-radius: 10px; background: linear-gradient(135deg, #e0e0e0, #c8c8c8); display: flex; align-items: center; justify-content: center; font-size: 28px; }
+  .campaign-title { font-size: 22px; font-weight: 700; color: #1d3557; }
+  .status-badge { background: #e8f5e9; color: #2e7d32; border-radius: 20px; padding: 4px 12px; font-size: 12px; font-weight: 700; display: inline-block; margin-right: 10px; }
+  .ean { font-size: 13px; color: #888; }
+
+  .tabs { display: flex; gap: 0; margin-bottom: 24px; border-bottom: 2px solid #e8eaf0; }
+  .tab { padding: 12px 20px; font-size: 14px; font-weight: 600; color: #888; cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -2px; }
+  .tab.active { color: #1d3557; border-bottom-color: #1d3557; }
+
+  .section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+  .section-title { font-size: 18px; font-weight: 700; color: #1d3557; }
+  .date-select { background: #fff; border: 1px solid #e0e0e0; border-radius: 8px; padding: 8px 16px; font-size: 13px; color: #555; font-weight: 500; display: flex; align-items: center; gap: 8px; }
+
+  .stats-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 16px; margin-bottom: 24px; }
+  .stat-card { background: #fff; border-radius: 12px; border: 1px solid #e8eaf0; padding: 20px 22px; }
+  .stat-label { font-size: 12px; color: #888; font-weight: 600; text-transform: uppercase; letter-spacing: 0.4px; margin-bottom: 8px; display: flex; align-items: center; gap: 6px; }
+  .stat-value { font-size: 28px; font-weight: 800; color: #1d3557; margin-bottom: 4px; }
+  .stat-sub { font-size: 12px; color: #aaa; }
+
+  .chart-card { background: #fff; border-radius: 12px; border: 1px solid #e8eaf0; padding: 24px 28px; }
+  .chart-title { font-size: 16px; font-weight: 700; color: #1d3557; margin-bottom: 4px; }
+  .chart-sub { font-size: 13px; color: #aaa; margin-bottom: 20px; }
+  .chart-tabs { display: flex; gap: 8px; margin-bottom: 20px; align-items: center; }
+  .chart-tab { padding: 7px 16px; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; color: #555; border: 1px solid #e0e0e0; background: #fff; }
+  .chart-tab.active { background: #1d3557; color: #fff; border-color: #1d3557; }
+  .toggle-group { display: flex; align-items: center; gap: 8px; margin-left: auto; font-size: 13px; color: #555; }
+  .toggle { width: 36px; height: 20px; border-radius: 10px; background: #1d3557; position: relative; cursor: pointer; }
+  .toggle::after { content: ''; position: absolute; width: 16px; height: 16px; border-radius: 50%; background: #fff; top: 2px; right: 2px; }
+  .toggle.off { background: #ddd; }
+  .toggle.off::after { right: auto; left: 2px; }
+
+  .chart-area { position: relative; height: 220px; }
+  svg.chart { width: 100%; height: 100%; }
+</style>
+</head>
+<body>
+<div class="topbar">
+  <div style="display:flex;align-items:center;gap:32px">
+    <div class="logo">Ad<span>Pal</span></div>
+    <div class="nav">
+      <a href="#">Dashboard</a>
+      <a href="#" class="active">Campagnes</a>
+      <a href="#">Producten</a>
+      <a href="#">Rapporten</a>
+    </div>
+  </div>
+  <div class="user-area">
+    <div style="font-size:13px;color:#555">Webwinkel Vakdagen 2025</div>
+    <div class="avatar">WV</div>
+  </div>
+</div>
+
+<div class="sidebar">
+  <div class="sidebar-item">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>Dashboard
+  </div>
+  <div class="sidebar-item active">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>Campagnes
+  </div>
+  <div class="sidebar-item">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>Producten
+  </div>
+  <div class="sidebar-item">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>Rapporten
+  </div>
+</div>
+
+<div class="main">
+  <div class="breadcrumb">Home &rsaquo; <a href="#">Campagnes</a> &rsaquo; 2261</div>
+
+  <div class="campaign-header">
+    <div class="campaign-info">
+      <div class="campaign-img">⌚</div>
+      <div>
+        <div class="campaign-title">forge gun metal</div>
+        <div style="margin-top:6px"><span class="status-badge">Aan</span><span class="ean">EAN: 8721082650243</span></div>
+      </div>
+    </div>
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#aaa" stroke-width="2"><circle cx="12" cy="5" r="1.5" fill="#aaa"/><circle cx="12" cy="12" r="1.5" fill="#aaa"/><circle cx="12" cy="19" r="1.5" fill="#aaa"/></svg>
+  </div>
+
+  <div class="tabs">
+    <div class="tab active">Overzicht</div>
+    <div class="tab">Campagne instellingen</div>
+  </div>
+
+  <div class="section-header">
+    <div class="section-title">Campagne overzicht</div>
+    <div class="date-select">
+      Afgelopen 14 dagen
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#555" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+    </div>
+  </div>
+
+  <div class="stats-grid">
+    <div class="stat-card">
+      <div class="stat-label">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#aaa" stroke-width="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="10" r="3"/><path d="M7 20.66A10 10 0 0 1 12 2a10 10 0 0 1 5 18.66"/></svg>
+        Vertoningen
+      </div>
+      <div class="stat-value">52K</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#aaa" stroke-width="2"><path d="M5 12l5 5L20 7"/></svg>
+        Clicks
+      </div>
+      <div class="stat-value">892</div>
+      <div class="stat-sub">CTR: 1.72%</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#aaa" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+        Conversies
+      </div>
+      <div class="stat-value">20</div>
+      <div class="stat-sub">Conversiepercentage: 2.24%</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#aaa" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+        Omzet
+      </div>
+      <div class="stat-value" style="color:#1d3557">€1.5K</div>
+      <div class="stat-sub">ACoS: 70.27%</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#aaa" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+        Kosten
+      </div>
+      <div class="stat-value">€1K</div>
+      <div class="stat-sub">Avg Cpc: €1.15</div>
+    </div>
+  </div>
+
+  <div class="chart-card">
+    <div class="chart-title">Prestatie overzicht</div>
+    <div class="chart-sub">Prestaties van al je AdPal campagnes</div>
+    <div class="chart-tabs">
+      <div class="chart-tab active">Revenue &amp; Cost</div>
+      <div class="chart-tab">Impressions &amp; CTR</div>
+      <div class="chart-tab">Clicks &amp; Conversions</div>
+      <div class="chart-tab">ACoS &amp; Roas</div>
+      <div class="toggle-group">
+        <div class="toggle"></div> ACoS7d
+        <div class="toggle off"></div> Vorige periode
+      </div>
+    </div>
+    <div class="chart-area">
+      <svg class="chart" viewBox="0 0 900 220" xmlns="http://www.w3.org/2000/svg">
+        <!-- Y axis labels left -->
+        <text x="0" y="20" fill="#aaa" font-size="11">€350</text>
+        <text x="0" y="55" fill="#aaa" font-size="11">€315</text>
+        <text x="0" y="90" fill="#aaa" font-size="11">€280</text>
+        <text x="0" y="125" fill="#aaa" font-size="11">€245</text>
+        <text x="0" y="160" fill="#aaa" font-size="11">€210</text>
+        <text x="0" y="195" fill="#aaa" font-size="11">€175</text>
+        <!-- Y axis labels right -->
+        <text x="870" y="20" fill="#aaa" font-size="11">€250</text>
+        <text x="870" y="55" fill="#aaa" font-size="11">€225</text>
+        <text x="870" y="90" fill="#aaa" font-size="11">€200</text>
+        <text x="870" y="125" fill="#aaa" font-size="11">€175</text>
+        <text x="870" y="160" fill="#aaa" font-size="11">€150</text>
+        <text x="870" y="195" fill="#aaa" font-size="11">€125</text>
+        <!-- Grid lines -->
+        <line x1="32" y1="15" x2="860" y2="15" stroke="#f0f0f5" stroke-width="1"/>
+        <line x1="32" y1="50" x2="860" y2="50" stroke="#f0f0f5" stroke-width="1"/>
+        <line x1="32" y1="85" x2="860" y2="85" stroke="#f0f0f5" stroke-width="1"/>
+        <line x1="32" y1="120" x2="860" y2="120" stroke="#f0f0f5" stroke-width="1"/>
+        <line x1="32" y1="155" x2="860" y2="155" stroke="#f0f0f5" stroke-width="1"/>
+        <line x1="32" y1="190" x2="860" y2="190" stroke="#f0f0f5" stroke-width="1"/>
+        <!-- Green dashed line (revenue prev) -->
+        <polyline points="32,190 120,140 210,60 300,170 390,155 480,130 570,145 660,100 750,160 860,175" fill="none" stroke="#4caf50" stroke-width="2" stroke-dasharray="6,4"/>
+        <!-- Blue solid line (revenue) -->
+        <polyline points="32,185 120,160 210,110 300,75 390,130 480,135 570,115 660,80 750,95 860,120" fill="none" stroke="#1d3557" stroke-width="2.5"/>
+        <!-- Orange solid line (cost) -->
+        <polyline points="32,200 120,195 210,185 300,175 390,165 480,155 570,145 660,130 750,100 860,115" fill="none" stroke="#e57c2b" stroke-width="2.5"/>
+        <!-- Data points blue -->
+        <circle cx="300" cy="75" r="4" fill="#fff" stroke="#1d3557" stroke-width="2"/>
+        <circle cx="480" cy="135" r="4" fill="#fff" stroke="#1d3557" stroke-width="2"/>
+        <circle cx="660" cy="80" r="4" fill="#fff" stroke="#1d3557" stroke-width="2"/>
+        <circle cx="860" cy="120" r="4" fill="#fff" stroke="#1d3557" stroke-width="2"/>
+        <!-- Data points orange -->
+        <circle cx="750" cy="100" r="4" fill="#fff" stroke="#e57c2b" stroke-width="2"/>
+        <circle cx="860" cy="115" r="4" fill="#fff" stroke="#e57c2b" stroke-width="2"/>
+        <!-- Data points green -->
+        <circle cx="210" cy="60" r="4" fill="#fff" stroke="#4caf50" stroke-width="2"/>
+      </svg>
+    </div>
+  </div>
+</div>
+</body>
+</html>
