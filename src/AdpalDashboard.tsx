@@ -208,7 +208,10 @@ export const AdpalDashboard: React.FC = () => {
   const chartSlide   = interpolate(frame, [T.chart - 10, T.chart + 16], [22, 0], clamp);
 
   return (
-    <AbsoluteFill style={{background: C.bg, fontFamily: "'Inter','Helvetica Neue','Arial',sans-serif", overflow: 'hidden', opacity}}>
+    <AbsoluteFill style={{background: C.bg, fontFamily: "'Inter','Helvetica Neue','Arial',sans-serif", overflow: 'hidden'}}>
+
+      {/* Wit fade-out overlay */}
+      <div style={{position: 'absolute', inset: 0, background: 'white', opacity: 1 - opacity, zIndex: 999, pointerEvents: 'none'}} />
 
       {/* Decorative blobs */}
       <div style={{position: 'absolute', top: -110, left: -70, width: 480, height: 480, borderRadius: '50%', background: C.blobB}} />
