@@ -49,7 +49,7 @@ const T = {
 
 // ─── Chart data (normalised 0–1, 1 = top) ────────────────────────────────────
 
-const OMZET_RAW  = [0.38, 0.34, 0.42, 0.52, 0.61, 0.59, 0.62, 0.59, 0.47, 0.43, 0.53, 0.72];
+const OMZET_RAW  = [0.38, 0.36, 0.46, 0.58, 0.68, 0.72, 0.76, 0.71, 0.65, 0.62, 0.68, 0.72];
 const KOSTEN_RAW = [0.26, 0.21, 0.28, 0.36, 0.50, 0.42, 0.45, 0.35, 0.24, 0.35, 0.52, 0.76];
 
 const CW = 900, CH = 310, PL = 35, PB = 25;
@@ -233,19 +233,15 @@ export const AdpalDashboard: React.FC = () => {
         }}
       >
         {/* ADPAL logo */}
-        <div
+        <img
+          src="https://instructies.s3.us-east-1.amazonaws.com/AdPal_logo_no_white+(1)+kopie.png"
           style={{
-            fontSize: 68,
-            fontWeight: 900,
-            color: C.navy,
-            letterSpacing: '-0.025em',
+            height: 80,
             marginBottom: 48,
             transform: `scale(${logoS}) translateY(${(1 - logoS) * -32}px)`,
             opacity: logoS,
           }}
-        >
-          ADPAL
-        </div>
+        />
 
         {/* Dashboard card */}
         <div
