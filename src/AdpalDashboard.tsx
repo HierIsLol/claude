@@ -42,7 +42,7 @@ const T = {
   chartEnd:  185,
   zoomIn:    115,
   zoomEnd:   215,
-  fadeOut:   185,
+  fadeOut:   125,
   end:       248,
 };
 
