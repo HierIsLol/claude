@@ -200,12 +200,12 @@ function Line({
 
   let color: string;
   if (isPassed) {
-    color = "rgba(15,25,80,0.04)";
+    color = "rgba(37,99,235,0.04)";
   } else if (isActive) {
-    color = isLast ? "#2563eb" : "#0f172a";
+    color = "#2563eb";
   } else {
     const dist = interpolate(rel, [0.26, 1.0, 2.2, 4.2], [1, 0.55, 0.28, 0.08], clamp);
-    color = `rgba(30, 50, 140, ${dist * 0.85})`;
+    color = `rgba(37, 99, 235, ${dist * 0.85})`;
   }
 
   // Subtle glow at readable peak — blue tint
@@ -262,47 +262,6 @@ function Line({
   );
 }
 
-// ─── Progress dots ───────────────────────────────────────────────────────────
-
-function ProgressDots({ cam }: { cam: number }) {
-  const current = Math.min(Math.floor(cam + 0.56), LINES.length - 1);
-
-  return (
-    <div
-      style={{
-        position: "absolute",
-        bottom: 52,
-        left: "50%",
-        transform: "translateX(-50%)",
-        display: "flex",
-        gap: 9,
-        alignItems: "center",
-      }}
-    >
-      {LINES.map((_, i) => {
-        const isActive = i === current;
-        const isPast = i < current;
-        return (
-          <div
-            key={i}
-            style={{
-              width: isActive ? 28 : 8,
-              height: 8,
-              borderRadius: 4,
-              background: isActive
-                ? "#2563eb"
-                : isPast
-                ? "rgba(37,99,235,0.3)"
-                : "rgba(15,23,80,0.15)",
-              boxShadow: isActive ? "0 0 10px rgba(37,99,235,0.45)" : "none",
-              transition: "none",
-            }}
-          />
-        );
-      })}
-    </div>
-  );
-}
 
 // ─── Root ─────────────────────────────────────────────────────────────────────
 
@@ -356,7 +315,6 @@ export function TextCameraAnimation() {
         }}
       />
 
-      <ProgressDots cam={cam} />
     </AbsoluteFill>
   );
 }
