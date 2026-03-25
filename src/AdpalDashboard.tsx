@@ -2,6 +2,7 @@ import React from 'react';
 import {
   AbsoluteFill,
   Easing,
+  Img,
   interpolate,
   spring,
   useCurrentFrame,
@@ -39,18 +40,16 @@ const T = {
   card3:     73,
   chart:     78,
   chartEnd:  185,
-  zoomIn:    115,   // zoom starts while lines still animate
+  zoomIn:    115,
   zoomEnd:   215,
-  spikeIn:   188,   // lijn schiet omhoog aan het einde
-  spikeEnd:  218,
   fadeOut:   218,
   end:       248,
 };
 
 // ─── Chart data (normalised 0–1, 1 = top) ────────────────────────────────────
 
-const OMZET_RAW  = [0.38, 0.36, 0.46, 0.58, 0.68, 0.72, 0.76, 0.71, 0.65, 0.62, 0.68, 0.72];
-const KOSTEN_RAW = [0.26, 0.21, 0.28, 0.36, 0.50, 0.42, 0.45, 0.35, 0.24, 0.35, 0.52, 0.76];
+const OMZET_RAW  = [0.36, 0.33, 0.38, 0.41, 0.39, 0.45, 0.48, 0.52, 0.49, 0.55, 0.58, 0.55, 0.61, 0.63, 0.60, 0.65, 0.68, 0.65, 0.70, 0.67, 0.72, 0.69, 0.73, 0.71, 0.75, 0.73, 0.77, 0.75, 0.79, 0.82];
+const KOSTEN_RAW = [0.24, 0.20, 0.25, 0.29, 0.26, 0.31, 0.35, 0.38, 0.33, 0.39, 0.42, 0.38, 0.43, 0.41, 0.37, 0.44, 0.47, 0.43, 0.48, 0.45, 0.50, 0.46, 0.51, 0.48, 0.53, 0.49, 0.54, 0.51, 0.56, 0.58];
 
 const CW = 900, CH = 310, PL = 35, PB = 25;
 const CBOT = CH - PB;
@@ -62,7 +61,7 @@ function buildPoints(data: number[]) {
   }));
 }
 
-const OMZET_PTS  = buildPoints(OMZET_RAW);
+const OMZET_PTS = buildPoints(OMZET_RAW);
 const KOSTEN_PTS = buildPoints(KOSTEN_RAW);
 
 // Smooth cubic-bezier path (Catmull-Rom) + animated tip dot
@@ -86,8 +85,8 @@ function smoothChart(pts: {x: number; y: number}[], prog: number) {
 
   if (vis.length < 2) return {path: `M ${vis[0].x},${vis[0].y}`, dot};
 
-  // Catmull-Rom → cubic bezier  (tension 0.28 gives gentle curves)
-  const t = 0.28;
+  // Catmull-Rom → cubic bezier  (tension 0.16 = minder strak, meer organisch)
+  const t = 0.16;
   let d = `M ${vis[0].x.toFixed(1)},${vis[0].y.toFixed(1)}`;
   for (let i = 1; i < vis.length; i++) {
     const p0 = vis[Math.max(0, i - 2)];
@@ -163,12 +162,6 @@ export const AdpalDashboard: React.FC = () => {
     easing: Easing.inOut(Easing.quad),
   });
 
-  // End spike — omzet-lijn schiet omhoog na het tekenen
-  const spikeProg = interpolate(frame, [T.spikeIn, T.spikeEnd], [0, 1], {
-    ...clamp,
-    easing: Easing.out(Easing.cubic),
-  });
-
   // Camera zoom into chart — starts while lines are mid-draw
   const zoomProg = interpolate(frame, [T.zoomIn, T.zoomEnd], [0, 1], {
     ...clamp,
@@ -193,13 +186,8 @@ export const AdpalDashboard: React.FC = () => {
     `scale(${scale.toFixed(4)})`,
   ].join(' ');
 
-  // Dynamische punten: laatste punt van omzet schiet omhoog bij spike
-  const spikeTopY = 0.72 + spikeProg * 0.24;   // 0.72 → 0.96
-  const omzetDynamic = [...OMZET_RAW.slice(0, -1), spikeTopY];
-  const omzetDynPts  = buildPoints(omzetDynamic);
-
   // Chart paths (smooth curves)
-  const omz = smoothChart(omzetDynPts, Math.max(chartProg, spikeProg > 0 ? 1 : 0));
+  const omz = smoothChart(OMZET_PTS, chartProg);
   const kst = smoothChart(KOSTEN_PTS, chartProg);
   const chartVisible = chartProg > 0.02;
 
@@ -233,11 +221,11 @@ export const AdpalDashboard: React.FC = () => {
         }}
       >
         {/* ADPAL logo */}
-        <img
+        <Img
           src="https://instructies.s3.us-east-1.amazonaws.com/AdPal_logo_no_white+(1)+kopie.png"
           style={{
             height: 400,
-            marginTop: -100,
+            marginTop: -115,
             marginBottom: -120,
             transform: `scale(${logoS}) translateY(${(1 - logoS) * -32}px)`,
             opacity: logoS,
