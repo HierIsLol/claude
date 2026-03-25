@@ -236,7 +236,7 @@ export const AdpalDashboard: React.FC = () => {
         <img
           src="https://instructies.s3.us-east-1.amazonaws.com/AdPal_logo_no_white+(1)+kopie.png"
           style={{
-            height: 80,
+            height: 400,
             marginBottom: 48,
             transform: `scale(${logoS}) translateY(${(1 - logoS) * -32}px)`,
             opacity: logoS,
